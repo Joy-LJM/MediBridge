@@ -1,0 +1,20 @@
+
+div ul {
+  display: flex;
+  flex-direction: row;
+  justify-content:center;
+  background-color: var(--secondaryGreen);
+  color: #fff;
+  li,a {
+    padding: 1em 2em;
+    a:hover {
+      background-color: var(--mGreen);
+      padding: 1em 2em;
+    }
+  }
+}
+
+.active{
+  background-color: var(--lightGreen);
+  color: #333;
+}
