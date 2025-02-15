@@ -1,5 +1,6 @@
 .footer{
   height: 3em;
+  line-height: 3em;
   background-color: var(--darkGreen);
   color: #fff;
   position: fixed;
