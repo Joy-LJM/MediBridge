@@ -1,7 +1,377 @@
-// import React from 'react'
+import * as React from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import Footer from "../components/Footer";
+import Header from "../components/Header";
+import Navigation from "../components/Navigation";
+import {
+  Typography,
+  Container,
+  Box,
+  TextField,
+  FormControl,
+  Select,
+  MenuItem,
+  InputLabel,
+  Button,
+} from "@mui/material";
+import "../styles/register.css";
+
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormLabel from "@mui/material/FormLabel";
 
 export default function Register() {
+  const [firstname, setFname] = React.useState();
+  const [lastname, setLname] = React.useState();
+  const [email, setEmail] = React.useState();
+  const [password, setPassword] = React.useState();
+  const [phone, setNumber] = React.useState();
+  const [address, setAddress] = React.useState();
+  const [cities, setCities] = React.useState([]);
+  const [provinces, setProvinces] = React.useState([]);
+  const [account, setAccount] = React.useState();
+  const [selectedProvince, setSelectedProvince] = React.useState("");
+  const [city, setCity] = React.useState("");
+  const navigate = useNavigate();
+
+  // Fetch provinces on component mount
+  React.useEffect(() => {
+    axios
+      .get("http://localhost:3000/api/provinces")
+      .then((response) => {
+        setProvinces(response.data);
+      })
+      .catch((error) => console.error("Error fetching provinces:", error));
+  }, []);
+
+  // Fetch cities when province changes
+  React.useEffect(() => {
+    if (selectedProvince) {
+      axios
+        .get(`http://localhost:3000/api/cities/${selectedProvince}`)
+        .then((response) => {
+          setCities(response.data);
+        })
+        .catch((error) => console.error("Error fetching cities:", error));
+    }
+  }, [selectedProvince]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    axios
+      .post("http://localhost:3000/register", {
+        firstname,
+        lastname,
+        email,
+        password,
+        phone,
+        address,
+        city: city,
+        province: selectedProvince,
+        account,
+      })
+      .then((result) => {
+        navigate("/signin");
+      })
+      .catch((err) => console.log(err));
+  };
+
   return (
-    <div>Register</div>
-  )
+    <div className="container">
+      <Header />
+      <Navigation />
+      <Container
+        className="signUp"
+        sx={{
+          textAlign: "center",
+          py: 5,
+          "@media (min-width: 1200px)": {
+            maxWidth: "550px",
+          },
+        }}
+      >
+        <Typography variant="h4" fontWeight="bold">
+          Sign Up
+        </Typography>
+        <Box className="box">
+          <form onSubmit={handleSubmit}>
+            <FormControl sx={{ m: 1, width: 300 }}>
+              <TextField
+                id="fname"
+                label="First Name"
+                type="text"
+                InputLabelProps={{ style: { color: "#fff" } }}
+                sx={{
+                  marginBottom: "30px",
+                  "& .MuiInputBase-input": { color: "#fff" },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { borderColor: "#fff" },
+                    "&:hover fieldset": { borderColor: "#689D6D" },
+                    "&.Mui-focused fieldset": { borderColor: "#fff" },
+                  },
+                }}
+                onChange={(e) => setFname(e.target.value)}
+                required
+              />
+              <TextField
+                id="lname"
+                label="Last Name"
+                type="text"
+                InputLabelProps={{ style: { color: "#fff" } }}
+                sx={{
+                  marginBottom: "30px",
+                  "& .MuiInputBase-input": { color: "#fff" },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { borderColor: "#fff" },
+                    "&:hover fieldset": { borderColor: "#689D6D" },
+                    "&.Mui-focused fieldset": { borderColor: "#fff" },
+                  },
+                }}
+                onChange={(e) => setLname(e.target.value)}
+                required
+              />
+              <TextField
+                id="email"
+                label="Email"
+                type="email"
+                InputLabelProps={{ style: { color: "#fff" } }}
+                sx={{
+                  marginBottom: "30px",
+                  "& .MuiInputBase-input": { color: "#fff" },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { borderColor: "#fff" },
+                    "&:hover fieldset": { borderColor: "#689D6D" },
+                    "&.Mui-focused fieldset": { borderColor: "#fff" },
+                  },
+                }}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <TextField
+                id="password"
+                label="Password"
+                type="password"
+                InputLabelProps={{ style: { color: "#fff" } }}
+                sx={{
+                  marginBottom: "30px",
+                  "& .MuiInputBase-input": { color: "#fff" },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { borderColor: "#fff" },
+                    "&:hover fieldset": { borderColor: "#689D6D" },
+                    "&.Mui-focused fieldset": { borderColor: "#fff" },
+                  },
+                }}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <TextField
+                id="phone"
+                label="Phone"
+                type="tel"
+                InputLabelProps={{ style: { color: "#fff" } }}
+                sx={{
+                  marginBottom: "30px",
+                  "& .MuiInputBase-input": { color: "#fff" },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { borderColor: "#fff" },
+                    "&:hover fieldset": { borderColor: "#689D6D" },
+                    "&.Mui-focused fieldset": { borderColor: "#fff" },
+                  },
+                }}
+                onChange={(e) => setNumber(e.target.value)}
+                required
+              />
+              <TextField
+                id="address"
+                label="Address"
+                type="text"
+                InputLabelProps={{ style: { color: "#fff" } }}
+                sx={{
+                  marginBottom: "30px",
+                  "& .MuiInputBase-input": { color: "#fff" },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { borderColor: "#fff" },
+                    "&:hover fieldset": { borderColor: "#689D6D" },
+                    "&.Mui-focused fieldset": { borderColor: "#fff" },
+                  },
+                }}
+                onChange={(e) => setAddress(e.target.value)}
+                required
+              />
+              <FormControl sx={{ marginBottom: "30px" }}>
+                <InputLabel
+                  id="province-label"
+                  sx={{ "&.Mui-focused ": { color: "#fff" }, color: "#fff" }}
+                >
+                  Province
+                </InputLabel>
+                <Select
+                  labelId="province-label"
+                  id="province"
+                  label="Province"
+                  value={selectedProvince}
+                  onChange={(e) => setSelectedProvince(e.target.value)}
+                  sx={{
+                    color: "#fff",
+                    "& .MuiSelect-select": { color: "#fff" },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#fff",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#689D6D",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#fff",
+                    },
+                    "& .MuiSvgIcon-root": { color: "#fff" }, // Changes dropdown arrow color
+                  }}
+                >
+                  <MenuItem value="">Select a province</MenuItem>
+                  {provinces.map((province) => (
+                    <MenuItem key={province._id} value={province._id}>
+                      {province.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              {/* Fixed Select Dropdown */}
+              <FormControl sx={{ marginBottom: "30px" }}>
+                <InputLabel
+                  id="age-label"
+                  sx={{ "&.Mui-focused ": { color: "#fff" }, color: "#fff" }}
+                >
+                  City
+                </InputLabel>
+                <Select
+                  labelId="age-label"
+                  id="age"
+                  label="City"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  sx={{
+                    color: "#fff",
+                    "& .MuiSelect-select": { color: "#fff" },
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#fff",
+                    },
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#689D6D",
+                    },
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      borderColor: "#fff",
+                    },
+                    "& .MuiSvgIcon-root": { color: "#fff" }, // Changes dropdown arrow color
+                  }}
+                >
+                  <MenuItem value="">Select a city</MenuItem>
+                  {cities.map((city) => (
+                    <MenuItem key={city._id} value={city._id}>
+                      {city.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl sx={{ marginBottom: "30px" }}>
+                <FormLabel
+                  id="demo-row-radio-buttons-group-label"
+                  sx={{
+                    color: "#fff",
+                    textAlign: "left",
+                    "&.Mui-focused ": { color: "#fff" },
+                  }}
+                >
+                  Account
+                </FormLabel>
+                <RadioGroup
+                  row
+                  aria-labelledby="demo-row-radio-buttons-group-label"
+                  name="row-radio-buttons-group"
+                  sx={{ py: 2, textAlign: "center" }}
+                  value={account} // Bind state
+                  onChange={(event) => setAccount(event.target.value)}
+                >
+                  <FormControlLabel
+                    value="1"
+                    control={
+                      <Radio
+                        sx={{
+                          color: "#fff",
+                          "&.Mui-checked": {
+                            color: "#689D6D",
+                          },
+                        }}
+                      />
+                    }
+                    label="Doctor"
+                    sx={{ paddingRight: 7 }}
+                  />
+                  <FormControlLabel
+                    value="2"
+                    control={
+                      <Radio
+                        sx={{
+                          color: "#fff",
+                          "&.Mui-checked": {
+                            color: "#689D6D",
+                          },
+                        }}
+                      />
+                    }
+                    label="Pharmacy"
+                  />
+                  <FormControlLabel
+                    value="3"
+                    control={
+                      <Radio
+                        sx={{
+                          color: "#fff",
+                          "&.Mui-checked": {
+                            color: "#689D6D",
+                          },
+                        }}
+                      />
+                    }
+                    label="Patient"
+                    sx={{ paddingRight: 7 }}
+                  />
+                  <FormControlLabel
+                    value="4"
+                    control={
+                      <Radio
+                        sx={{
+                          color: "#fff",
+                          "&.Mui-checked": {
+                            color: "#689D6D",
+                          },
+                        }}
+                      />
+                    }
+                    label="Shipper"
+                  />
+                </RadioGroup>
+              </FormControl>
+              <Button
+                variant="outlined"
+                size="large"
+                type="submit"
+                sx={{
+                  backgroundColor: "#fff",
+                  color: "#38603A",
+                  borderRadius: 50,
+                  fontWeight: 700,
+                  fontSize: 25,
+                }}
+              >
+                Submit
+              </Button>
+            </FormControl>
+          </form>
+        </Box>
+      </Container>
+      <Footer />
+    </div>
+  );
 }
