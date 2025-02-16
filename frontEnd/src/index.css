@@ -2,15 +2,17 @@
   margin: 0;
   padding: 0;
 }
-ul li,ol li{
+ul li,
+ol li {
   list-style: none;
 }
-a{
+a {
   text-decoration: none;
   color: #fff;
 }
 body {
   font-family: "Inknut Antiqua", serif;
+  background-color: #d1e3c4;
 }
 .inknut-antiqua-regular {
   font-family: "Inknut Antiqua", serif;
@@ -23,7 +25,7 @@ body {
   --mGreen: #689d6d;
   --lightGreen: #c3da8a;
 }
-.container{
+.container {
   display: flex;
   flex-direction: column;
 }
