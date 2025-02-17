@@ -13,6 +13,7 @@ a {
 body {
   font-family: "Inknut Antiqua", serif;
   background-color: #d1e3c4;
+  box-sizing: border-box;
 }
 .inknut-antiqua-regular {
   font-family: "Inknut Antiqua", serif;
