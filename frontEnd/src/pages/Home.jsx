@@ -1,17 +1,15 @@
-// import React from 'react'
-
+import { Box } from "@mui/material";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
 import Navigation from "../components/Navigation";
-import Dashboard from "./Dashboard";
 
 export default function Home() {
   return (
-    <div className="container">
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }} className="container">
       <Header />
       <Navigation />
-      <Dashboard />
+      sss
       <Footer />
-    </div>
+    </Box>
   );
 }

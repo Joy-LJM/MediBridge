@@ -1,6 +1,6 @@
-import React from "react";
 import logo from "../assets/logo.png"; 
 import '../styles/header.css';
+import PropTypes from "prop-types";
 export default function Header({ children }) {
   return (
    
@@ -19,5 +19,5 @@ export default function Header({ children }) {
 }
 
 Header.propTypes = {
-  children: React.Children,
+  children: PropTypes.node,
 };
