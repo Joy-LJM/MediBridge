@@ -1,0 +1,13 @@
+.signUp {
+  margin-top: 50px;
+  margin-bottom: 100px;
+  max-width: 550px;
+  background-color: #38603a;
+  border-radius: 20px;
+  height: auto;
+  color: white;
+}
+
+.box {
+  margin: 30px auto;
+}
