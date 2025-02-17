@@ -1,9 +1,8 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import logo from "../assets/logo.png";
 import "../styles/header.css";
 import { Button, Stack } from "@mui/material";
-// import PropTypes from 'prop-types';
+import PropTypes from 'prop-types';
 
 export default function Header({ children }) {
   return (
@@ -42,5 +41,5 @@ export default function Header({ children }) {
 }
 
 Header.propTypes = {
-  children: React.Children,
+  children: PropTypes.node,
 };

@@ -1,10 +1,9 @@
-// import React from 'react'
 import { NavLink } from "react-router-dom";
 import "../styles/Navigation.css";
 
 export default function Navigation() {
   return (
-    <div>
+    <div id="nav">
       <ul>
         <li>
           <NavLink
@@ -12,6 +11,15 @@ export default function Navigation() {
             className={({ isActive }) => (isActive ? "active" : "")}
           >
             Home
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) => (isActive ? "active" : "")}
+          >
+            {/* <Dashboard/> */}
+            Dashboard
           </NavLink>
         </li>
         <li>

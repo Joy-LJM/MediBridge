@@ -48,7 +48,7 @@ export default function TabContent({label,children}) {
   };
 
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: "#D1E3C4", display: "flex", height: '100vh'  }}>
+    <Box sx={{ flexGrow: 1, bgcolor: "#D1E3C4", display: "flex", height: '100vh',}}>
       <Tabs
         orientation="vertical"
         value={value}

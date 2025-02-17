@@ -1,4 +1,3 @@
-// import React from 'react'
 
 import Footer from "../components/Footer";
 import Header from "../components/Header";
@@ -17,14 +16,11 @@ import StarIcon from "@mui/icons-material/Star";
 import "../styles/home.css";
 import avatar from "../assets/avatar.png";
 
-import Dashboard from "./Dashboard";
-
 export default function Home() {
   return (
-    <div className="container">
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }} className="container">
       <Header />
       <Navigation />
-
       <Container
         className="welcomeCard"
         sx={{
@@ -156,8 +152,8 @@ export default function Home() {
           ))}
         </Paper>
       </Container>
-      <Dashboard />
+      
       <Footer />
-    </div>
+    </Box>
   );
 }
