@@ -4,7 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 
 import "./index.css";
 import App from "./App.jsx";
-import { ThemeProvider, createTheme, } from "@mui/material/styles";
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline } from "@mui/material";
 
 let theme = createTheme({
@@ -19,17 +19,11 @@ let theme = createTheme({
   },
 });
 
-const theme = createTheme({
-  typography: {
-    fontFamily: '"Inknut Antiqua", serif', // Apply font globally
-  },
-});
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
       <ThemeProvider theme={theme}>
-
-        <CssBaseline/>
+        <CssBaseline />
         <App />
       </ThemeProvider>
     </BrowserRouter>
