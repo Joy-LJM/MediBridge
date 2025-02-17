@@ -1,5 +1,3 @@
-
-// import './App.css'
 import { Route,  Routes } from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -9,7 +7,6 @@ import About from './pages/About'
 import Contact from './pages/Contact'
 
 function App() {
-
   return (
     <>
       <Routes>
