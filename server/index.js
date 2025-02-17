@@ -76,6 +76,24 @@ app.get("/api/cities/:provinceId", async (request, response) => {
   response.json(cities);
 });
 
+//Return list of accounts
+app.get("/api/accounts", async (request, response) => {
+  let accounts = await getAccounts();
+  response.json(accounts); //send JSON object with appropriate JSON headers
+});
+
+//set up server listening
+app.listen(port, () => {
+  console.log(`Listening on http://localhost:${port}`);
+});
+
+//MongoDB functions
+async function connection() {
+  await client.connect();
+  db = client.db("mediBridge"); //select paintball database
+  return db;
+}
+
 /**FUNCTION TO RETRIEVE DATA */
 
 /* Async function to retrieve all provinces from scenarios collection. */
@@ -92,6 +110,13 @@ async function getCities(provinceId) {
   var results = db.collection("cities").find({ provinceId: reid }).toArray(); //{} as the query means no filter, so select all
   return results;
 }
+/* Async function to retrieve all accounts from scenarios collection. */
+async function getAccounts() {
+  db = await connection(); //await result of connection() and store the returned db
+  var results = db.collection("accounts").find({}); //{} as the query means no filter, so select all
+  res = await results.toArray();
+  return res;
+}
 
 /**END FUNCTION TO RETRIEVE DATA */
 
@@ -102,16 +127,4 @@ async function account(userData) {
   db = await connection(); //await result of connection() and store the returned db
   let status = await db.collection("users").insertOne(userData);
   console.log(status);
-}
-
-//set up server listening
-app.listen(port, () => {
-  console.log(`Listening on http://localhost:${port}`);
-});
-
-//MongoDB functions
-async function connection() {
-  await client.connect();
-  db = client.db("mediBridge"); //select paintball database
-  return db;
 }
