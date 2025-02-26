@@ -115,13 +115,6 @@ app.listen(port, () => {
   console.log(`Listening on http://localhost:${port}`);
 });
 
-//MongoDB functions
-async function connection() {
-  await client.connect();
-  db = client.db("mediBridge"); //select paintball database
-  return db;
-}
-
 /**FUNCTION TO RETRIEVE DATA */
 
 /* Async function to retrieve all provinces from scenarios collection. */
@@ -142,7 +135,8 @@ async function getCities(provinceId) {
 }
 /* Async function to retrieve all accounts from scenarios collection. */
 async function getAccounts() {
-  db = await connection(); //await result of connection() and store the returned db
+  // db = await connection(); //await result of connection() and store the returned db
+  const db = mongoose.connection;
   var results = db.collection("accounts").find({}); //{} as the query means no filter, so select all
   res = await results.toArray();
   return res;
@@ -160,13 +154,8 @@ async function account(userData) {
   console.log(status);
 }
 
-//
+// dashboard routes
 app.use("/prescription", doctorDashboardRoutes);
-
-//set up server listening
-app.listen(port, () => {
-  console.log(`Listening on http://localhost:${port}`);
-});
 
 //MongoDB functions
 // async function connection() {

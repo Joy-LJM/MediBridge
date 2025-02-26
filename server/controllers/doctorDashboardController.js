@@ -1,4 +1,5 @@
 const Prescription = require("../models/doctorDashboardModel");
+
 module.exports.submitPrescription = async (req, res, next) => {
   try {
     const data = req.body;
