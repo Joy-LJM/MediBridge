@@ -29,10 +29,12 @@ export default function Register() {
   const [phone, setNumber] = React.useState();
   const [address, setAddress] = React.useState();
   const [cities, setCities] = React.useState([]);
-  const [provinces, setProvinces] = React.useState([]);
-  const [account, setAccount] = React.useState();
-  const [selectedProvince, setSelectedProvince] = React.useState("");
   const [city, setCity] = React.useState("");
+  const [provinces, setProvinces] = React.useState([]);
+  const [selectedProvince, setSelectedProvince] = React.useState("");
+  const [account, setAccount] = React.useState([]);
+  const [selectedAccount, setSelectedAccount] = React.useState("");
+
   const navigate = useNavigate();
 
   // Fetch provinces on component mount
@@ -57,6 +59,16 @@ export default function Register() {
     }
   }, [selectedProvince]);
 
+  // Fetch account
+  React.useEffect(() => {
+    axios
+      .get("http://localhost:3000/api/accounts")
+      .then((response) => {
+        setAccount(response.data);
+      })
+      .catch((error) => console.error("Error fetching accounts:", error));
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
@@ -69,7 +81,7 @@ export default function Register() {
         address,
         city: city,
         province: selectedProvince,
-        account,
+        account: selectedAccount,
       })
       .then(() => {
         navigate("/login");
@@ -225,7 +237,6 @@ export default function Register() {
                     "& .MuiSvgIcon-root": { color: "#fff" }, // Changes dropdown arrow color
                   }}
                 >
-                  <MenuItem value="">Select a province</MenuItem>
                   {provinces.map((province) => (
                     <MenuItem key={province._id} value={province._id}>
                       {province.name}
@@ -262,7 +273,6 @@ export default function Register() {
                     "& .MuiSvgIcon-root": { color: "#fff" }, // Changes dropdown arrow color
                   }}
                 >
-                  <MenuItem value="">Select a city</MenuItem>
                   {cities.map((city) => (
                     <MenuItem key={city._id} value={city._id}>
                       {city.name}
@@ -287,67 +297,26 @@ export default function Register() {
                   aria-labelledby="demo-row-radio-buttons-group-label"
                   name="row-radio-buttons-group"
                   sx={{ py: 2, textAlign: "center" }}
-                  value={account} // Bind state
-                  onChange={(event) => setAccount(event.target.value)}
+                  onChange={(e) => setSelectedAccount(e.target.value)}
                 >
-                  <FormControlLabel
-                    value="1"
-                    control={
-                      <Radio
-                        sx={{
-                          color: "#fff",
-                          "&.Mui-checked": {
-                            color: "#689D6D",
-                          },
-                        }}
-                      />
-                    }
-                    label="Doctor"
-                    sx={{ paddingRight: 7 }}
-                  />
-                  <FormControlLabel
-                    value="2"
-                    control={
-                      <Radio
-                        sx={{
-                          color: "#fff",
-                          "&.Mui-checked": {
-                            color: "#689D6D",
-                          },
-                        }}
-                      />
-                    }
-                    label="Pharmacy"
-                  />
-                  <FormControlLabel
-                    value="3"
-                    control={
-                      <Radio
-                        sx={{
-                          color: "#fff",
-                          "&.Mui-checked": {
-                            color: "#689D6D",
-                          },
-                        }}
-                      />
-                    }
-                    label="Patient"
-                    sx={{ paddingRight: 7 }}
-                  />
-                  <FormControlLabel
-                    value="4"
-                    control={
-                      <Radio
-                        sx={{
-                          color: "#fff",
-                          "&.Mui-checked": {
-                            color: "#689D6D",
-                          },
-                        }}
-                      />
-                    }
-                    label="Shipper"
-                  />
+                  {account.map((acc) => (
+                    <FormControlLabel
+                      key={acc._id}
+                      value={acc._id}
+                      control={
+                        <Radio
+                          sx={{
+                            color: "#fff",
+                            "&.Mui-checked": {
+                              color: "#689D6D",
+                            },
+                          }}
+                        />
+                      }
+                      label={acc.name}
+                      sx={{ paddingRight: 3 }}
+                    />
+                  ))}
                 </RadioGroup>
               </FormControl>
               <Button
