@@ -12,6 +12,9 @@ import { TextareaAutosize } from "@mui/base/TextareaAutosize";
 import "../styles/Dashboard.css";
 import TabContent from "../components/TabContent";
 import PharmacySearch from "../components/PharmacySearch";
+import axios from "axios";
+import { HOST_URL } from "../constant";
+import { ToastContainer } from "react-toastify";
 
 export default function DoctorDashboard() {
   const [formData, setFormData] = useState({
@@ -46,7 +49,7 @@ export default function DoctorDashboard() {
     }
     return null;
   }, [files]);
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback( async () => {
     console.log(formData, "formdata");
 
     const { files, selectedPharmacy, patient } = formData || {};
@@ -74,11 +77,11 @@ export default function DoctorDashboard() {
     setError(newErrors); // ✅ Set all errors in one state update
 
     if(!newErrors.patientErr && ! newErrors.selectedPharmacyErr && !newErrors.filesErr){
-      console.log(formData,'submit form data')
+    const res= await axios.post(`${HOST_URL}/prescription/submit`,formData);
+    console.log(res,'res')
     }
   }, [formData]);
 
-  console.log(error, "eeee");
 
   const handleSelectPharmacy = useCallback(
     (e) => {
@@ -92,6 +95,8 @@ export default function DoctorDashboard() {
 
   return (
     // <FormControl required>
+    <>
+     <ToastContainer />
     <TabContent label="Upload Prescription" >
       <Grid2 container spacing={2} marginBottom={2}>
         <Grid2 size={4}>
@@ -184,6 +189,8 @@ export default function DoctorDashboard() {
         Submit
       </Button>
     </TabContent>
+    </>
     // </FormControl>
+     
   );
 }

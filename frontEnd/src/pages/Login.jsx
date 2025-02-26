@@ -1,9 +1,9 @@
 import * as React from "react";
 import axios from "axios";
+import {  toast, ToastContainer } from 'react-toastify';
 import { useNavigate } from "react-router-dom";
-import Footer from "../components/Footer";
-import Header from "../components/Header";
-import Navigation from "../components/Navigation";
+// import Footer from "../components/Footer";
+
 import {
   Typography,
   Container,
@@ -13,6 +13,7 @@ import {
   Button,
 } from "@mui/material";
 import "../styles/login.css";
+import { HOST_URL } from "../constant";
 
 export default function Login() {
 
@@ -24,21 +25,33 @@ export default function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if(!email||!password){
+      toast.error("Please input your email or password before submit!");
+      return;
+    }
     axios
-      .post("http://localhost:3000/login", {
+      .post(`${HOST_URL}/login`, {
         email,
         password,
       })
-      .then(() => {
-        navigate("/");
+      .then((res) => {
+        const {data}=res;
+        const {code,message,user}=data;
+        if(code===1){
+          navigate("/dashboard");
+          toast.success(message);
+          localStorage.setItem("userInfo",JSON.stringify(user));
+        }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        toast.error(err.message);
+      });
   };
 
   return (
+    <>
+    <ToastContainer/>
     <div className="container">
-      <Header />
-      <Navigation />
       <Container
         className="signIn"
         sx={{
@@ -70,7 +83,7 @@ export default function Login() {
                   },
                 }}
                 onChange={(e) => setEmail(e.target.value)}
-                required
+                // required
               />
               <TextField
                 id="password"
@@ -87,7 +100,7 @@ export default function Login() {
                   },
                 }}
                 onChange={(e) => setPassword(e.target.value)}
-                required
+                // required
               />
               <Button
                 variant="outlined"
@@ -107,7 +120,8 @@ export default function Login() {
           </form>
         </Box>
       </Container>
-      <Footer />
+      {/* <Footer /> */}
     </div>
+    </>
   );
 }

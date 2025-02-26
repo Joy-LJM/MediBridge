@@ -1,7 +1,9 @@
 import { NavLink } from "react-router-dom";
 import "../styles/Navigation.css";
+import PropTypes from "prop-types";
 
-export default function Navigation() {
+export default function Navigation({isLogin}) {
+
   return (
     <div id="nav">
       <ul>
@@ -13,7 +15,7 @@ export default function Navigation() {
             Home
           </NavLink>
         </li>
-        <li>
+        {isLogin && <li>
           <NavLink
             to="/dashboard"
             className={({ isActive }) => (isActive ? "active" : "")}
@@ -21,7 +23,7 @@ export default function Navigation() {
             {/* <Dashboard/> */}
             Dashboard
           </NavLink>
-        </li>
+        </li>}
         <li>
           <NavLink
             to="/about"
@@ -41,4 +43,8 @@ export default function Navigation() {
       </ul>
     </div>
   );
+}
+
+Navigation.propTypes={
+  isLogin:PropTypes.string
 }
