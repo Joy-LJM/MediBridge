@@ -12,7 +12,7 @@ export default function Dashboard() {
   const {accountType}=JSON.parse(userInfo)||{};
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }} className="container">
+    <Box sx={{ display: "flex", flexDirection: "column", height: "fit-content" }} className="container">
      {accountType===ROLE_MAP.doctor&&<DoctorDashboard />} 
      {accountType===ROLE_MAP.patient&&<PatientDashboard />} 
      {accountType===ROLE_MAP.shipper&&<ShipperDashboard />} 

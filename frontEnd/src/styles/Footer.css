@@ -3,9 +3,9 @@
   line-height: 3em;
   background-color: var(--darkGreen);
   color: #fff;
-  /* position: relative; */
-  /* left: 0;
-  bottom: 0; */
+  position: relative;
+  left: 0;
+  bottom: 0;
   /* width: 100vw; */
   text-align: center;
 }

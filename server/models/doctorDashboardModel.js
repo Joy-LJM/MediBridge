@@ -3,24 +3,33 @@ const mongoose = require("mongoose");
 
 const prescriptionSchema = new mongoose.Schema({
   prescription_id: {
-    type: Number,
+    type: String,
     // required: true
   },
   file: { type: String },
   doctor_id: {
-    type: Number,
+    type: String,
     //  required: true
   },
   pharmacy_id: {
-    type: Number,
+    type: String,
     // required: true
   },
   patient_id: {
-    type: Number,
+    type: String,
     //  required: true
   },
   delivery_status_id: { type: Number },
   uploaded_date: { type: Date },
   completed_date: { type: Date },
+  remark: { type: String },
 });
-module.exports = mongoose.model("prescription", prescriptionSchema);
+
+const userSchema = new mongoose.Schema({
+  firstname: { type: String },
+  lastname: { type: String },
+  account: { type: String },
+});
+const User = mongoose.model("user", userSchema);
+const Prescription = mongoose.model("prescription", prescriptionSchema);
+module.exports = { Prescription, User };
