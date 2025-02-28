@@ -68,7 +68,12 @@ export default function Register() {
       })
       .catch((error) => console.error("Error fetching accounts:", error));
   }, []);
-
+  React.useEffect(() => {
+    const userInfo = localStorage.getItem("userInfo");
+    if (userInfo) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
   const handleSubmit = (e) => {
     e.preventDefault();
     axios

@@ -5,4 +5,5 @@ const ROLE_MAP = {
   patient: "3",
   shipper: "4",
 };
-export { HOST_URL, ROLE_MAP };
+const SUCCESS_CODE = 1;
+export { HOST_URL, ROLE_MAP, SUCCESS_CODE };
