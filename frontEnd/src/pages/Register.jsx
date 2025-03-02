@@ -1,9 +1,7 @@
 import * as React from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import Footer from "../components/Footer";
-import Header from "../components/Header";
-import Navigation from "../components/Navigation";
+// import Footer from "../components/Footer";
 import {
   Typography,
   Container,
@@ -21,6 +19,7 @@ import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
+import { HOST_URL } from "../constant";
 
 export default function Register() {
   const [firstname, setFname] = React.useState();
@@ -41,7 +40,7 @@ export default function Register() {
   // Fetch provinces on component mount
   React.useEffect(() => {
     axios
-      .get("http://localhost:3000/api/provinces")
+      .get(`${HOST_URL}/api/provinces`)
       .then((response) => {
         setProvinces(response.data);
       })
@@ -52,7 +51,7 @@ export default function Register() {
   React.useEffect(() => {
     if (selectedProvince) {
       axios
-        .get(`http://localhost:3000/api/cities/${selectedProvince}`)
+        .get(`${HOST_URL}/api/cities/${selectedProvince}`)
         .then((response) => {
           setCities(response.data);
         })
@@ -69,11 +68,16 @@ export default function Register() {
       })
       .catch((error) => console.error("Error fetching accounts:", error));
   }, []);
-
+  React.useEffect(() => {
+    const userInfo = localStorage.getItem("userInfo");
+    if (userInfo) {
+      navigate("/dashboard");
+    }
+  }, [navigate]);
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .post("http://localhost:3000/register", {
+      .post(`${HOST_URL}/register`, {
         firstname,
         lastname,
         email,
@@ -93,8 +97,6 @@ export default function Register() {
 
   return (
     <div className="container">
-      <Header />
-      <Navigation />
       <Container
         className="signUp"
         sx={{
@@ -341,7 +343,7 @@ export default function Register() {
           </form>
         </Box>
       </Container>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }
