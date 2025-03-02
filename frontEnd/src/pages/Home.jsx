@@ -1,8 +1,3 @@
-
-import Footer from "../components/Footer";
-import Header from "../components/Header";
-import Navigation from "../components/Navigation";
-
 import {
   Typography,
   Container,
@@ -18,9 +13,10 @@ import avatar from "../assets/avatar.png";
 
 export default function Home() {
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }} className="container">
-      <Header />
-      <Navigation />
+    <Box
+      sx={{ display: "flex", flexDirection: "column" }}
+      className="container"
+    >
       <Container
         className="welcomeCard"
         sx={{
@@ -152,8 +148,6 @@ export default function Home() {
           ))}
         </Paper>
       </Container>
-      
-      <Footer />
     </Box>
   );
 }

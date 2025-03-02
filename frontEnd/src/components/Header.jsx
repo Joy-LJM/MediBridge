@@ -2,9 +2,10 @@ import { Link } from "react-router-dom";
 import logo from "../assets/logo.png";
 import "../styles/header.css";
 import { Button, Stack } from "@mui/material";
-import PropTypes from 'prop-types';
+import PropTypes from "prop-types";
 
-export default function Header({ children }) {
+export default function Header({ isLogin,handleLogout }) {
+
   return (
     <header>
       <div className="left">
@@ -13,6 +14,21 @@ export default function Header({ children }) {
           <h2>MediBridge </h2>
           <p> Connecting convenient care for everyone</p>
         </div>
+      </div>
+      {isLogin ? (
+        <Stack spacing={2} direction="row">
+          <Button
+            className="btn"
+            variant="outlined"
+            color="inherit"
+            sx={{ mx: 1 }}
+            // component={Link}
+            onClick={handleLogout}
+          >
+            Logout
+          </Button>
+        </Stack>
+      ) : (
         <Stack spacing={2} direction="row">
           <Button
             className="btn"
@@ -34,12 +50,12 @@ export default function Header({ children }) {
             Sign In
           </Button>
         </Stack>
-      </div>
-      {children}
+      )}
     </header>
   );
 }
 
 Header.propTypes = {
-  children: PropTypes.node,
+  isLogin: PropTypes.string,
+  handleLogout: PropTypes.func,
 };

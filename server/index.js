@@ -5,8 +5,10 @@ const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
 
 dotenv.config();
+const doctorDashboardRoutes = require("./routes/doctorDashboard");
 const cors = require("cors"); //need this to set this API to allow requests from other servers
 const { MongoClient, ObjectId } = require("mongodb");
+const { Connection, default: mongoose } = require("mongoose");
 
 const app = express();
 const port = process.env.PORT || "3000";
@@ -184,6 +186,34 @@ app.post("/verify", async (req, res) => {
   }
 });
 
+=======
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  // db = await connection();
+  const db = mongoose.connection;
+  const user = await db.collection("users").findOne({ email });
+
+  if (!user) {
+    return res.json({ code: 0, message: "Invalid username !" });
+  }
+  // To check a password:
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+
+  if (!isPasswordValid) {
+    return res.json({ code: 0, message: "Invalid  password !" });
+  }
+
+  res.json({
+    code: 1,
+    message: "Login successful",
+    user: {
+      username: user.username,
+      email: user.email,
+      id: user._id,
+      accountType: user.account,
+    },
+  });
+});
 // Return list of provinces
 app.get("/api/provinces", async (request, response) => {
   let provinces = await getProvinces();
@@ -208,32 +238,28 @@ app.listen(port, () => {
   console.log(`Listening on http://localhost:${port}`);
 });
 
-//MongoDB functions
-async function connection() {
-  await client.connect();
-  db = client.db("mediBridge"); //select paintball database
-  return db;
-}
-
 /**FUNCTION TO RETRIEVE DATA */
 
 /* Async function to retrieve all provinces from scenarios collection. */
 async function getProvinces() {
-  db = await connection(); //await result of connection() and store the returned db
-  var results = db.collection("provinces").find({}); //{} as the query means no filter, so select all
-  res = await results.toArray();
+  // db = await connection(); //await result of connection() and store the returned db
+  const db = mongoose.connection;
+  var results = await db.collection("provinces").find({}); //{} as the query means no filter, so select all
+  res = results.toArray();
   return res;
 }
 /* Async function to retrieve all cities from scenarios collection. */
 async function getCities(provinceId) {
-  db = await connection(); //await result of connection() and store the returned db
+  // db = await connection(); //await result of connection() and store the returned db
+  const db = mongoose.connection;
   const reid = new ObjectId(provinceId);
   var results = db.collection("cities").find({ provinceId: reid }).toArray(); //{} as the query means no filter, so select all
   return results;
 }
 /* Async function to retrieve all accounts from scenarios collection. */
 async function getAccounts() {
-  db = await connection(); //await result of connection() and store the returned db
+  // db = await connection(); //await result of connection() and store the returned db
+  const db = mongoose.connection;
   var results = db.collection("accounts").find({}); //{} as the query means no filter, so select all
   res = await results.toArray();
   return res;
@@ -245,7 +271,26 @@ async function getAccounts() {
 /* Async function to insert account information of a customer into customers collection. */
 
 async function account(userData) {
-  db = await connection(); //await result of connection() and store the returned db
+  // db = await connection(); //await result of connection() and store the returned db
+  const db = mongoose.connection;
   let status = await db.collection("users").insertOne(userData);
   console.log(status);
 }
+
+// dashboard routes
+app.use("/prescription", doctorDashboardRoutes);
+
+//MongoDB functions
+// async function connection() {
+//   await client.connect();
+//   db = client.db("mediBridge"); //select paintball database
+//   return db;
+// }
+mongoose
+  .connect(dbUrl)
+  .then(() => {
+    console.log("Connected to MongoDB");
+  })
+  .catch((err) => {
+    console.log(err);
+  });
