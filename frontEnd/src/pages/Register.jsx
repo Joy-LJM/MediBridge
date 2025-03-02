@@ -89,7 +89,8 @@ export default function Register() {
         account: selectedAccount,
       })
       .then(() => {
-        navigate("/login");
+        localStorage.setItem("isRegistered", "true");
+        navigate("/verification", { state: { email } });
       })
       .catch((err) => console.log(err));
   };

@@ -1,7 +1,10 @@
 const express = require("express");
 const path = require("path"); // module to help with file path
+const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
+
+dotenv.config();
 const doctorDashboardRoutes = require("./routes/doctorDashboard");
 const cors = require("cors"); //need this to set this API to allow requests from other servers
 const { MongoClient, ObjectId } = require("mongodb");
@@ -10,10 +13,10 @@ const { Connection, default: mongoose } = require("mongoose");
 const app = express();
 const port = process.env.PORT || "3000";
 
-// const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/paintball`;
+// const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/mediBridge`;
 const dbUrl = "mongodb://localhost:27017/mediBridge"; //default port is 27017
-// const client = new MongoClient(dbUrl);
-// sgMail.setApiKey(process.env.API_KEY);
+const client = new MongoClient(dbUrl);
+sgMail.setApiKey(process.env.API_KEY);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); //need this line to be able to receive/parse JSON from request
@@ -26,6 +29,9 @@ app.use(
   })
 );
 
+// verifictaion code will be saved temporary here.
+const verificationCodes = {};
+const verification_time = 15 * 60 * 1000; // 15 minutes
 // app.use(parser());
 
 app.post("/register", async (request, response) => {
@@ -33,37 +39,154 @@ app.post("/register", async (request, response) => {
   //for a GET form, use app.get() and request.query.<field-name> to retrieve the GET form data
 
   //retrieve values from submitted POST form
-  let firstname = request.body.firstname;
-  let lastname = request.body.lastname;
-  let email = request.body.email;
-  let pass = request.body.password;
-  let phone = request.body.phone;
-  let address = request.body.address;
-  let city = request.body.city;
-  let province = request.body.province;
-  let acc = request.body.account;
-  let create = new Date();
-  let deleted = null;
-  bcrypt.hash(pass, 12).then((hash) => {
-    let infor = {
-      firstname: firstname,
-      lastname: lastname,
-      email: email,
-      password: hash,
-      phone: phone,
-      address: address,
-      city: city,
-      province: province,
-      account: acc,
-      created_at: create,
-      deleted_at: deleted,
-    };
-    account(infor);
-    response.json("success");
-  });
+  let {
+    firstname,
+    lastname,
+    email,
+    password,
+    phone,
+    address,
+    city,
+    province,
+    account,
+  } = request.body;
+  // let created = new Date();
+  // let deleted = null;
+  // // create a random number for code
+  // let verificationCode = Math.floor(100000 + Math.random() * 900000);
+  // bcrypt.hash(pass, 12).then((hash) => {
+  //   let infor = {
+  //     firstname: firstname,
+  //     lastname: lastname,
+  //     email: email,
+  //     password: hash,
+  //     phone: phone,
+  //     address: address,
+  //     city: city,
+  //     province: province,
+  //     account: acc,
+  //     created_at: created,
+  //     deleted_at: deleted,
+  //     verificationCode
+  //   };
+
+  //   // Send email verification to user
+  //   const emailData = {
+  //     to: email,
+  //     from: "hathaonhin@gmail.com",
+  //     subject: "Email Verification Code",
+  //     text: "Thank you for your registration. This is your code verification:",
+  //   };
+
+  //   try {
+  //     sgMail.send(emailData);
+  //     // console.log("Email sent successfully");
+
+  //     // Respond with booking information and QR code image path
+  //     response.status(201).json({
+  //       status: "success",
+  //       message: result.message,
+  //       booking: result,
+  //       qrImagePath: `/qr_codes/${bookingId}.png`,
+  //     });
+  //   } catch (emailError) {
+  //     console.error("Error sending email:", emailError.message);
+  //     response.status(500).json({
+  //       status: "error",
+  //       message: "An error occurred while sending the email",
+  //     });
+  //   }
+
+  //   account(infor);
+  //   response.json("success");
+  // });
+  if (verificationCodes[email]) {
+    return res.json("Verification already pending. Enter the code.");
+  }
+
+  let verificationCode = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit code
+  verificationCodes[email] = {
+    verificationCode,
+    userData: {
+      firstname,
+      lastname,
+      email,
+      password,
+      phone,
+      address,
+      city,
+      province,
+      account,
+    },
+    expiresAt: Date.now() + verification_time,
+  };
+
+  // Send verification email
+  const emailData = {
+    to: email,
+    from: "hathaonhin@gmail.com",
+    subject: "Your Verification Code",
+    text: `Your verification code is: ${verificationCode}`,
+    html: `<p>Your verification code is: <strong>${verificationCode}</strong></p>`,
+  };
+
+  await sgMail.send(emailData);
+
+  response.json("success");
   //redirect back to sign in page
 });
 
+app.post("/verify", async (req, res) => {
+  try {
+    const { email, verificationCode } = req.body;
+
+    if (!verificationCodes[email]) {
+      return res.status(400).json({
+        success: false,
+        message: "No verification request found for this email.",
+      });
+    }
+
+    // Check if the verification code has expired
+    const { expiresAt, verificationCode: storedCode } =
+      verificationCodes[email];
+    if (Date.now() > expiresAt) {
+      delete verificationCodes[email]; // Remove expired code
+      return res.status(400).json({
+        success: false,
+        message: "Verification code has expired.",
+      });
+    }
+
+    if (parseInt(verificationCode) !== storedCode) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid verification code." });
+    }
+
+    // Hash password and insert user into database
+    const userData = verificationCodes[email].userData;
+    // console.log(userData);
+    userData.password = await bcrypt.hash(userData.password, 12);
+
+    userData.created_at = new Date();
+    userData.deleted_at = null;
+
+    await account(userData);
+
+    delete verificationCodes[email]; // Remove temporary data after successful verification
+
+    res.json({
+      success: true,
+      message: "User verified and registered successfully.",
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ success: false, message: "Verification failed." });
+  }
+});
+
+=======
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   // db = await connection();
