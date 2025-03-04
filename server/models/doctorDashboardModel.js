@@ -28,8 +28,12 @@ const prescriptionSchema = new mongoose.Schema({
 const userSchema = new mongoose.Schema({
   firstname: { type: String },
   lastname: { type: String },
+  address: { type: String },
+  phone: { type: String },
   account: { type: String },
+  email: { type: String },
 });
 const User = mongoose.model("user", userSchema);
 const Prescription = mongoose.model("prescription", prescriptionSchema);
+
 module.exports = { Prescription, User };

@@ -3,8 +3,8 @@ import axios from "axios";
 import { TextField, Button, CircularProgress, Select, MenuItem, Box } from "@mui/material";
 import PropTypes from "prop-types";
 
-const PharmacySearch = ({setPharmacies,pharmacies,handleSelectPharmacy,selectedPharmacy}) => {
-  const [address, setAddress] = useState("");
+const PharmacySearch = ({setPharmacies,pharmacies,handleSelectPharmacy,selectedPharmacy,address,handleChangeAddress}) => {
+
   const [loading, setLoading] = useState(false);
 
   // Haversine Formula: Calculate distance between two lat/lng points
@@ -88,7 +88,7 @@ const PharmacySearch = ({setPharmacies,pharmacies,handleSelectPharmacy,selectedP
         label="Enter Address (e.g., 31 Devitte Ave N)"
         variant="outlined"
         value={address}
-        onChange={(e) => setAddress(e.target.value)}
+        onChange={handleChangeAddress}
         sx={{ mb: 2 }}
       
       />
@@ -123,5 +123,7 @@ PharmacySearch.propTypes={
   handleSelectPharmacy:PropTypes.func,
   pharmacies:PropTypes.arrayOf(PropTypes.object),
   selectedPharmacy:PropTypes.string,
+  address:PropTypes.string,
+  handleChangeAddress:PropTypes.func,
 }
 export default PharmacySearch;

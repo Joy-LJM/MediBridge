@@ -17,21 +17,38 @@ import "../styles/Dashboard.css";
 import TabContent from "../components/TabContent";
 import PharmacySearch from "../components/PharmacySearch";
 import axios from "axios";
-import { HOST_URL, SUCCESS_CODE } from "../constant";
+import { ADD_PATIENT, GET_PATIENT_LIST,  SUBMIT_PRESCRIPTION, SUCCESS_CODE } from "../constant";
 import { toast, ToastContainer } from "react-toastify";
 
+const formErr={
+  firstnameErr: "",
+  lastnameErr: "",
+  phoneNumErr: "",
+  addressErr: "",
+  emailErr: "",
+}
 export default function DoctorDashboard() {
   const [formData, setFormData] = useState({
     files: [],
     selectedPharmacy: "",
     remark: "",
     patient: "",
+    address:""
+  });
+  const [patientData, setPatientData] = useState({
+    firstname: "",
+    lastname: "",
+    email: "",
+    address: "",
+    phone: "",
+    account:"3"
   });
   const [error, setError] = useState({
     filesErr: "",
     selectedPharmacyErr: "",
     patientErr: "",
   });
+  const [patientFormError, setPatientFormError] = useState(formErr);
   const [pharmacies, setPharmacies] = useState([]);
   const { files } = formData || {};
   const onFileUpload = (files) => {
@@ -90,7 +107,7 @@ export default function DoctorDashboard() {
       data.append("pharmacy_id", selectedPharmacy);
 
       const { data: response } = await axios.post(
-        `${HOST_URL}/prescription/submit`,
+        SUBMIT_PRESCRIPTION,
         data
       );
       const { code, message } = response || {};
@@ -102,6 +119,71 @@ export default function DoctorDashboard() {
     }
   }, [formData]);
 
+  const handleAddPatient = useCallback(async () => {
+    const { firstname, lastname, phone, address, email } = patientData || {};
+    let newErrors = {
+      firstnameErr: "",
+      lastnameErr: "",
+      phoneNumErr: "",
+      addressErr: "",
+      emailErr: "",
+    };
+
+    if (!lastname) {
+      newErrors.lastnameErr = "Please input last name!";
+    } else {
+      newErrors.lastnameErr = "";
+    }
+    if (!firstname) {
+      newErrors.firstnameErr = "Please input first name!";
+    } else {
+      newErrors.firstnameErr = "";
+    }
+
+    if (!phone) {
+      newErrors.phoneNumErr = "Please input phone number!";
+    } else {
+      newErrors.phoneNumErr = "";
+    }
+    if (!address) {
+      newErrors.addressErr = "Please input address!";
+    } else {
+      newErrors.addressErr = "";
+    }
+    if (!email) {
+      newErrors.emailErr = "Please input email!";
+    } else {
+      newErrors.emailErr = "";
+    }
+
+    setPatientFormError(newErrors); // ✅ Set all errors in one state update
+
+    const flag = Object.values(patientData).every((item) => item !== "");
+    if (flag) {
+      const { data: response } = await axios.post(
+        ADD_PATIENT,
+        patientData
+      );
+      setOpen(false);
+      const { code, message } = response || {};
+      if (code === SUCCESS_CODE) {
+        toast.success(message);
+        axios.get(GET_PATIENT_LIST).then((res) => {
+          const { data } = res || {};
+          setPatientList(data.patientList);
+          const curPatient=data.patientList.find(item=>item.email===email)
+          setFormData({
+            ...formData,
+            patient: curPatient,
+            address
+          });
+        });
+      } else {
+        toast.error(message);
+      }
+    }
+  }, [formData, patientData]);
+
   const handleSelectPharmacy = useCallback(
     (e) => {
       setFormData({
@@ -111,10 +193,19 @@ export default function DoctorDashboard() {
     },
     [formData]
   );
+  const handleChangeAddress = useCallback(
+    (e) => {
+      setFormData({
+        ...formData,
+        address: e.target.value,
+      });
+    },
+    [formData]
+  );
 
   const [patientList, setPatientList] = useState([]);
   useEffect(() => {
-    axios.get(`${HOST_URL}/prescription/patient`).then((res) => {
+    axios.get(GET_PATIENT_LIST).then((res) => {
       const { data } = res || {};
       setPatientList(data.patientList);
     });
@@ -128,6 +219,7 @@ export default function DoctorDashboard() {
 
   const handleClose = () => {
     setOpen(false);
+    setPatientFormError(formErr)
   };
 
   return (
@@ -165,20 +257,6 @@ export default function DoctorDashboard() {
             <FileNameText />
           </Grid2>
           <Grid2 size={4}>
-            <label>Search a pharmacy:</label>
-          </Grid2>
-          <Grid2 size={8}>
-            <PharmacySearch
-              pharmacies={pharmacies}
-              setPharmacies={setPharmacies}
-              selectedPharmacy={formData.selectedPharmacy}
-              handleSelectPharmacy={handleSelectPharmacy}
-            />
-            <FormHelperText error={!!error.selectedPharmacyErr}>
-              {error.selectedPharmacyErr}
-            </FormHelperText>
-          </Grid2>
-          <Grid2 size={4}>
             <label>Patient List:</label>
           </Grid2>
           <Grid2 size={7} style={{ display: "flex", alignItems: "center" }}>
@@ -198,9 +276,11 @@ export default function DoctorDashboard() {
                     }
                   }}
                   onChange={(e, option) => {
+                    console.log(option,'option')
                     setFormData({
                       ...formData,
                       patient: option,
+                      address:option?.address||''
                     });
                   }}
                   renderOption={(props, option) => {
@@ -240,6 +320,22 @@ export default function DoctorDashboard() {
             </Grid2>
           </Grid2>
           <Grid2 size={4}>
+            <label>Search a pharmacy:</label>
+          </Grid2>
+          <Grid2 size={8}>
+            <PharmacySearch
+              pharmacies={pharmacies}
+              setPharmacies={setPharmacies}
+              selectedPharmacy={formData.selectedPharmacy}
+              handleSelectPharmacy={handleSelectPharmacy}
+              address={formData.address}
+              handleChangeAddress={handleChangeAddress}
+            />
+            <FormHelperText error={!!error.selectedPharmacyErr}>
+              {error.selectedPharmacyErr}
+            </FormHelperText>
+          </Grid2>
+          <Grid2 size={4}>
             <label>Remark:</label>
           </Grid2>
           <Grid2 size={8}>
@@ -266,90 +362,125 @@ export default function DoctorDashboard() {
         aria-describedby="alert-dialog-description"
         fullWidth={true}
       >
-        <DialogTitle id="alert-dialog-title">
-        Add new patient
-        </DialogTitle>
+        <DialogTitle id="alert-dialog-title">Add new patient</DialogTitle>
         <DialogContent>
-        <Box className="box">
-          <form onSubmit={handleSubmit}>
-            <FormControl sx={{ m: 1, width: 300 }}>
-              <TextField
-                id="fname"
-                label="First Name"
-                type="text"
-                sx={{
-                  marginBottom: "20px",
-                  "& .MuiOutlinedInput-root": {
-                    "&:hover fieldset": { borderColor: "#689D6D" },
-                  },
-                }}
-                // onChange={(e) => setFname(e.target.value)}
-                required
-              />
-              <TextField
-                id="lname"
-                label="Last Name"
-                type="text"
-                sx={{
-                  marginBottom: "20px",
-                  "& .MuiOutlinedInput-root": {
-                    "&:hover fieldset": { borderColor: "#689D6D" },
-                  },
-                }}
-                // onChange={(e) => setLname(e.target.value)}
-                required
-              />
-              <TextField
-                id="email"
-                label="Email"
-                type="email"
-                sx={{
-                  marginBottom: "20px",
-                  "& .MuiOutlinedInput-root": {
-                    "&:hover fieldset": { borderColor: "#689D6D" },
-                  },
-                }}
-                // onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-             
-              <TextField
-                id="phone"
-                label="Phone"
-                type="tel"
-                sx={{
-                  marginBottom: "20px",
-                  "& .MuiOutlinedInput-root": {
-                    "&:hover fieldset": { borderColor: "#689D6D" },
-                
-                  },
-                }}
-                // onChange={(e) => setNumber(e.target.value)}
-                required
-              />
-              <TextField
-                id="address"
-                label="Address"
-                type="text"
-                sx={{
-                  marginBottom: "20px",
-                  "& .MuiOutlinedInput-root": {
-                 
-                    "&:hover fieldset": { borderColor: "#689D6D" },
-                  
-                  },
-                }}
-                // onChange={(e) => setAddress(e.target.value)}
-                required
-              />
-              
-            </FormControl>
-          </form>
-        </Box>
+          <Box className="box">
+            <form onSubmit={handleSubmit}>
+              <FormControl sx={{ m: 1, width: 300 }}>
+                <TextField
+                  id="fname"
+                  label="First Name"
+                  type="text"
+                  sx={{
+                    marginBottom: "10px",
+                    "& .MuiOutlinedInput-root": {
+                      "&:hover fieldset": { borderColor: "#689D6D" },
+                    },
+                  }}
+                  value={patientData.firstname}
+                  onChange={(e) => {
+                    setPatientData({
+                      ...patientData,
+                      firstname: e.target.value,
+                    });
+                  }}
+                />
+                <FormHelperText className="textErr" marginBottom={5} error={!!patientFormError.firstnameErr}>
+                  {patientFormError.firstnameErr}
+                </FormHelperText>
+                <TextField
+                  id="lname"
+                  label="Last Name"
+                  value={patientData.lastname}
+                  type="text"
+                  sx={{
+                    marginBottom: "10px",
+                    "& .MuiOutlinedInput-root": {
+                      "&:hover fieldset": { borderColor: "#689D6D" },
+                    },
+                  }}
+                  onChange={(e) => {
+                    setPatientData({
+                      ...patientData,
+                      lastname: e.target.value,
+                    });
+                  }}
+                />
+                <FormHelperText className="textErr"  margin="10px" error={!!patientFormError.lastnameErr}>
+                  {patientFormError.lastnameErr}
+                </FormHelperText>
+                <TextField
+                  id="email"
+                  label="Email"
+                  value={patientData.email}
+                  type="email"
+                  sx={{
+                    marginBottom: "10px",
+                    "& .MuiOutlinedInput-root": {
+                      "&:hover fieldset": { borderColor: "#689D6D" },
+                    },
+                  }}
+                  onChange={(e) => {
+                    setPatientData({
+                      ...patientData,
+                      email: e.target.value,
+                    });
+                  }}
+                />
+                <FormHelperText  className="textErr" error={!!patientFormError.emailErr}>
+                  {patientFormError.emailErr}
+                </FormHelperText>
+                <TextField
+                  id="phone"
+                  label="Phone"
+                  type="tel"
+                  value={patientData.phone}
+                  sx={{
+                    marginBottom: "10px",
+                    "& .MuiOutlinedInput-root": {
+                      "&:hover fieldset": { borderColor: "#689D6D" },
+                    },
+                  }}
+                  onChange={(e) => {
+                    setPatientData({
+                      ...patientData,
+                      phone: e.target.value,
+                    });
+                  }}
+                />
+                <FormHelperText className="textErr" error={!!patientFormError.phoneNumErr}>
+                  {patientFormError.phoneNumErr}
+                </FormHelperText>
+                <TextField
+                  id="address"
+                  label="Address"
+                  type="text"
+                  value={patientData.address}
+                  sx={{
+                    marginBottom: "10px",
+                    "& .MuiOutlinedInput-root": {
+                      "&:hover fieldset": { borderColor: "#689D6D" },
+                    },
+                  }}
+                  onChange={(e) => {
+                    setPatientData({
+                      ...patientData,
+                      address: e.target.value,
+                    });
+                  }}
+                />
+                <FormHelperText  className="textErr" error={!!patientFormError.addressErr}>
+                  {patientFormError.addressErr}
+                </FormHelperText>
+              </FormControl>
+            </form>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} color="error" variant="outlined">Cancel</Button>
-          <Button onClick={handleClose} autoFocus variant="outlined">
+          <Button onClick={handleClose} color="error" variant="outlined">
+            Cancel
+          </Button>
+          <Button onClick={handleAddPatient} autoFocus variant="outlined">
             Add
           </Button>
         </DialogActions>
