@@ -1,6 +1,7 @@
 const {
   submitPrescription,
   getPatientList,
+  addPatient,
 } = require("../controllers/doctorDashboardController");
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
@@ -9,5 +10,6 @@ const router = require("express").Router();
 
 router.post("/submit", upload.single("uploaded_file"), submitPrescription);
 router.get("/patient", getPatientList);
+router.post("/addPatient", addPatient);
 
 module.exports = router;
