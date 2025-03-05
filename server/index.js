@@ -6,7 +6,7 @@ const sgMail = require("@sendgrid/mail");
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" });
 dotenv.config();
-const doctorDashboardRoutes = require("./routes/doctorDashboard");
+
 const cors = require("cors"); //need this to set this API to allow requests from other servers
 const { MongoClient, ObjectId } = require("mongodb");
 
@@ -191,15 +191,14 @@ app.post("/login", async (req, res) => {
   db = await connection();
 
   const user = await db.collection("users").findOne({ email });
-  console.log(user, "user");
+
   if (!user) {
     return res.json({ code: 0, message: "Invalid username !" });
   }
   // To check a password:
   const isPasswordValid = await bcrypt.compare(password, user.password);
-
-  if (!isPasswordValid) {
-    return res.json({ code: 0, message: "Invalid  password !" });
+  if (!user.password || !isPasswordValid) {
+    return res.json({ code: 0, message: "Invalid password !" });
   }
 
   res.json({
@@ -277,33 +276,35 @@ async function account(userData) {
 }
 
 // dashboard routes
-// app.use("/prescription", doctorDashboardRoutes);
-app.post(
-  "/prescription/submit",
-  upload.single("uploaded_file"),
-  async (req, res, next) => {
-    try {
-      const data = req.body;
-      db = await connection();
-      db.collection("prescription")
-        .insertOne(data)
-        .then(() => {
-          res.json({
-            code: 1,
-            message: "Prescription is submitted successfully!",
-          });
+
+app.post("/prescription/submit", upload.single(), async (req, res, next) => {
+  try {
+    const data = req.body;
+    const file = req.file;
+    console.log(data, file, "submit");
+    db = await connection();
+    db.collection("prescription")
+      .insertOne({ ...data, file: file.buffer.toString("base64") })
+      .then(() => {
+        res.json({
+          code: 1,
+          message: "Prescription is submitted successfully!",
         });
-    } catch (err) {
-      next(err);
-    }
+      });
+  } catch (err) {
+    next(err);
   }
-);
+});
 
 app.get("/prescription/patient", async (req, res, next) => {
   try {
     db = await connection();
 
-    const patientList = await db.collection("users").findOne({ account: "3" });
+    const patientList = await db
+      .collection("users")
+      .find({ account: "3" })
+      .toArray();
+
     const patientRes = patientList.map(
       ({ _id, firstname, lastname, account, email, address }) => {
         const res = { _id, firstname, lastname, account, email, address };
