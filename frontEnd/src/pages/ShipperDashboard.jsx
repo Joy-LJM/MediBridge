@@ -98,21 +98,21 @@ const Dashboard = () => {
                         </Typography>
 
                         {/* ✅ Added spacing between sections */}
-                        <Typography sx={{ fontWeight: "bold", fontSize: "16px", fontFamily: "Georgia, serif", marginBottom: "20px", marginLeft: "-20px" }}>
+                        <Typography sx={{ fontWeight: "bold", fontSize: "15px", fontFamily: "Georgia, serif", marginBottom: "20px", marginLeft: "-20px" }}>
                             Pharmacy’s Location :   {order.pharmacyLocation}
                         </Typography>
                         
 
-                        <Typography sx={{ fontWeight: "bold", fontSize: "16px", fontFamily: "Georgia, serif", marginBottom: "20px", marginLeft: "-65px" }}>
+                        <Typography sx={{ fontWeight: "bold", fontSize: "15px", fontFamily: "Georgia, serif", marginBottom: "20px", marginLeft: "-65px" }}>
                             Customer’s Location : {order.customerLocation}
                         </Typography>
                        
 
-                        <Typography sx={{ fontWeight: "bold", fontSize: "16px", fontFamily: "Georgia, serif", marginBottom: "20px", marginLeft: "-405px" }}>
+                        <Typography sx={{ fontWeight: "bold", fontSize: "15px", fontFamily: "Georgia, serif", marginBottom: "20px", marginLeft: "-405px" }}>
                             Remark : {order.remark || "None"}
                         </Typography>
 
-                        <Typography sx={{ fontWeight: "bold", fontSize: "16px", fontFamily: "Georgia, serif", marginBottom: "30px", marginLeft: "-408px" }}>
+                        <Typography sx={{ fontWeight: "bold", fontSize: "15px", fontFamily: "Georgia, serif", marginBottom: "30px", marginLeft: "-408px" }}>
                             Status : {order.status || "None"}
                         </Typography>
                         
