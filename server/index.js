@@ -13,8 +13,7 @@ const { MongoClient, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || "3000";
 
-// const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/mediBridge`;
-const dbUrl = "mongodb://localhost:27017/mediBridge"; //default port is 27017
+const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/mediBridge`;
 const client = new MongoClient(dbUrl);
 sgMail.setApiKey(process.env.API_KEY);
 
@@ -37,7 +36,6 @@ const verification_time = 15 * 60 * 1000; // 15 minutes
 app.post("/register", async (request, response) => {
   //for POST data, retrieve field data using request.body.<field-name>
   //for a GET form, use app.get() and request.query.<field-name> to retrieve the GET form data
-
   //retrieve values from submitted POST form
   let {
     firstname,
@@ -49,6 +47,7 @@ app.post("/register", async (request, response) => {
     city,
     province,
     account,
+    license,
   } = request.body;
 
   if (verificationCodes[email]) {
@@ -68,6 +67,7 @@ app.post("/register", async (request, response) => {
       city,
       province,
       account,
+      license,
     },
     expiresAt: Date.now() + verification_time,
   };
@@ -139,8 +139,8 @@ app.post("/verify", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  // db = await connection();
-  const db = mongoose.connection;
+  db = await connection();
+  //const db = mongoose.connection;
   const user = await db.collection("users").findOne({ email });
 
   if (!user) {
@@ -160,7 +160,7 @@ app.post("/login", async (req, res) => {
       username: user.username,
       email: user.email,
       id: user._id,
-      accountType: user.account,
+      account: user.account,
     },
   });
 });
@@ -181,6 +181,12 @@ app.get("/api/cities/:provinceId", async (request, response) => {
 app.get("/api/accounts", async (request, response) => {
   let accounts = await getAccounts();
   response.json(accounts); //send JSON object with appropriate JSON headers
+});
+
+// Return list of precriptions in pharmacy dashboard
+app.get("/api/prescriptions", async (request, response) => {
+  let pres = await getPrescriptions();
+  response.json(pres); //send JSON object with appropriate JSON headers
 });
 
 //set up server listening
@@ -206,7 +212,7 @@ async function getCities(provinceId) {
   var results = db.collection("cities").find({ provinceId: reid }).toArray(); //{} as the query means no filter, so select all
   return results;
 }
-/* Async function to retrieve all accounts from scenarios collection. */
+/* Async function to retrieve all accounts from accounts collection. */
 async function getAccounts() {
   db = await connection(); //await result of connection() and store the returned db
   // const db = mongoose.connection;
@@ -215,6 +221,38 @@ async function getAccounts() {
   return res;
 }
 
+/* Async function to retrieve all prescriptions from prescriptions collection. */
+async function getPrescriptions() {
+  db = await connection(); //await result of connection() and store the returned db
+  // const db = mongoose.connection;
+  var results = db.collection("prescriptions"); //{} as the query means no filter, so select all
+  const combinedData = await results.aggregate([
+    {
+      $lookup: {
+        from: "users",
+        localField: "doctorId",
+        foreignField: "_id",
+        as: "doctor",
+      },
+    },
+    { $unwind: "$doctor" },
+
+    {
+      $project: {
+        _id: 1,
+        doctorId: 1,
+        "doctor.firstname": 1,
+        "doctor.lastname": 1,
+        prescription_file: 1,
+        created: 1,
+      },
+    },
+  ]);
+
+  const res = await combinedData.toArray();
+  console.log(res);
+  return res;
+}
 /**END FUNCTION TO RETRIEVE DATA */
 
 /**FUNCTION TO ADD DATA */
