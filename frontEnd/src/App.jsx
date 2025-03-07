@@ -2,6 +2,7 @@ import { Route, Routes, useNavigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Shipper from "./pages/ShipperDashboard";
 import Verification from "./pages/Verification";
 import Dashboard from "./pages/Dashboard";
 import About from "./pages/About";
@@ -41,6 +42,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/shipper" element={< Shipper/>} />
       </Routes>
       <Footer/>
     </>
