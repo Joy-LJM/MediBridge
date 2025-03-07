@@ -17,23 +17,28 @@ import "../styles/Dashboard.css";
 import TabContent from "../components/TabContent";
 import PharmacySearch from "../components/PharmacySearch";
 import axios from "axios";
-import { ADD_PATIENT, GET_PATIENT_LIST,  SUBMIT_PRESCRIPTION, SUCCESS_CODE } from "../constant";
+import {
+  ADD_PATIENT,
+  GET_PATIENT_LIST,
+  SUBMIT_PRESCRIPTION,
+  SUCCESS_CODE,
+} from "../constant";
 import { toast, ToastContainer } from "react-toastify";
 
-const formErr={
+const formErr = {
   firstnameErr: "",
   lastnameErr: "",
   phoneNumErr: "",
   addressErr: "",
   emailErr: "",
-}
+};
 export default function DoctorDashboard() {
   const [formData, setFormData] = useState({
     files: [],
     selectedPharmacy: "",
     remark: "",
     patient: "",
-    address:""
+    address: "",
   });
   const [patientData, setPatientData] = useState({
     firstname: "",
@@ -41,7 +46,7 @@ export default function DoctorDashboard() {
     email: "",
     address: "",
     phone: "",
-    account:"3"
+    account: "3",
   });
   const [error, setError] = useState({
     filesErr: "",
@@ -54,14 +59,12 @@ export default function DoctorDashboard() {
   const onFileUpload = (files) => {
     setFormData({
       ...formData,
-      files: Array.isArray(files) ? files : [files],
+      files: Array.from(files)[0],
     });
   };
   const FileNameText = useCallback(() => {
     if (files.length > 0) {
-      const fileNames = files.map((item) => {
-        return item[0]?.name || "";
-      });
+      const fileNames = files.map((file) => file.name);
       return (
         <div style={{ color: "#457447", marginTop: 5 }}>
           {fileNames.join(", ")}
@@ -70,6 +73,7 @@ export default function DoctorDashboard() {
     }
     return null;
   }, [files]);
+
   const handleSubmit = useCallback(async () => {
     const { files, selectedPharmacy, patient, remark } = formData || {};
     let newErrors = { filesErr: "", selectedPharmacyErr: "", patientErr: "" };
@@ -101,15 +105,23 @@ export default function DoctorDashboard() {
       !newErrors.filesErr
     ) {
       const data = new FormData();
-      data.append("file", files);
+      const { id: doctor_id } = JSON.parse(localStorage.getItem("userInfo"));
+
+      // shipper_id
+      // completed_date
+      data.append("prescription_file", files);
       data.append("patient_id", patient._id);
+      data.append("doctor_id", doctor_id);
       data.append("remark", remark);
       data.append("pharmacy_id", selectedPharmacy);
+      data.append("uploaded_date", new Date());
+      data.append("delivery_status", "Pending");
 
-      const { data: response } = await axios.post(
-        SUBMIT_PRESCRIPTION,
-        data
-      );
+      const { data: response } = await axios.post(SUBMIT_PRESCRIPTION, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       const { code, message } = response || {};
       if (code === SUCCESS_CODE) {
         toast.success(message);
@@ -160,10 +172,7 @@ export default function DoctorDashboard() {
 
     const flag = Object.values(patientData).every((item) => item !== "");
     if (flag) {
-      const { data: response } = await axios.post(
-        ADD_PATIENT,
-        patientData
-      );
+      const { data: response } = await axios.post(ADD_PATIENT, patientData);
       setOpen(false);
       const { code, message } = response || {};
       if (code === SUCCESS_CODE) {
@@ -171,11 +180,13 @@ export default function DoctorDashboard() {
         axios.get(GET_PATIENT_LIST).then((res) => {
           const { data } = res || {};
           setPatientList(data.patientList);
-          const curPatient=data.patientList.find(item=>item.email===email)
+          const curPatient = data.patientList.find(
+            (item) => item.email === email
+          );
           setFormData({
             ...formData,
             patient: curPatient,
-            address
+            address,
           });
         });
       } else {
@@ -219,7 +230,7 @@ export default function DoctorDashboard() {
 
   const handleClose = () => {
     setOpen(false);
-    setPatientFormError(formErr)
+    setPatientFormError(formErr);
   };
 
   return (
@@ -276,11 +287,11 @@ export default function DoctorDashboard() {
                     }
                   }}
                   onChange={(e, option) => {
-                    console.log(option,'option')
+                    console.log(option, "option");
                     setFormData({
                       ...formData,
                       patient: option,
-                      address:option?.address||''
+                      address: option?.address || "",
                     });
                   }}
                   renderOption={(props, option) => {
@@ -385,7 +396,11 @@ export default function DoctorDashboard() {
                     });
                   }}
                 />
-                <FormHelperText className="textErr" marginBottom={5} error={!!patientFormError.firstnameErr}>
+                <FormHelperText
+                  className="textErr"
+                  marginBottom={5}
+                  error={!!patientFormError.firstnameErr}
+                >
                   {patientFormError.firstnameErr}
                 </FormHelperText>
                 <TextField
@@ -406,7 +421,11 @@ export default function DoctorDashboard() {
                     });
                   }}
                 />
-                <FormHelperText className="textErr"  margin="10px" error={!!patientFormError.lastnameErr}>
+                <FormHelperText
+                  className="textErr"
+                  margin="10px"
+                  error={!!patientFormError.lastnameErr}
+                >
                   {patientFormError.lastnameErr}
                 </FormHelperText>
                 <TextField
@@ -427,7 +446,10 @@ export default function DoctorDashboard() {
                     });
                   }}
                 />
-                <FormHelperText  className="textErr" error={!!patientFormError.emailErr}>
+                <FormHelperText
+                  className="textErr"
+                  error={!!patientFormError.emailErr}
+                >
                   {patientFormError.emailErr}
                 </FormHelperText>
                 <TextField
@@ -448,7 +470,10 @@ export default function DoctorDashboard() {
                     });
                   }}
                 />
-                <FormHelperText className="textErr" error={!!patientFormError.phoneNumErr}>
+                <FormHelperText
+                  className="textErr"
+                  error={!!patientFormError.phoneNumErr}
+                >
                   {patientFormError.phoneNumErr}
                 </FormHelperText>
                 <TextField
@@ -469,7 +494,10 @@ export default function DoctorDashboard() {
                     });
                   }}
                 />
-                <FormHelperText  className="textErr" error={!!patientFormError.addressErr}>
+                <FormHelperText
+                  className="textErr"
+                  error={!!patientFormError.addressErr}
+                >
                   {patientFormError.addressErr}
                 </FormHelperText>
               </FormControl>
