@@ -26,3 +26,6 @@ textarea{
     box-shadow: 0 0 3px var(--darkGreen);
   }
 }
+.textErr{
+  margin-bottom: 10px !important;
+}
