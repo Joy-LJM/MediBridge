@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Verification from "./pages/Verification";
 import Dashboard from "./pages/Dashboard";
+import Pharmacy from "./pages/PharmacyDashboard";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Header from "./components/Header";
@@ -28,7 +29,6 @@ function App() {
     }
   }, [userInfo]);
 
-
   return (
     <>
       <Header isLogin={isLogin} handleLogout={handleLogout} />
@@ -39,10 +39,11 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/verification" element={<Verification />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/pharmacy" element={<Pharmacy />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
       </Routes>
-      <Footer/>
+      <Footer />
     </>
   );
 }
