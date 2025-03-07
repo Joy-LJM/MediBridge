@@ -4,7 +4,9 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
+// const upload = multer({ dest: "uploads/" });
+
+const upload = multer({ storage: multer.memoryStorage() });
 dotenv.config();
 
 const cors = require("cors"); //need this to set this API to allow requests from other servers
@@ -276,25 +278,51 @@ async function account(userData) {
 }
 
 // dashboard routes
+app.post(
+  "/prescription/submit",
+  upload.single("prescription_file"),
+  async (req, res, next) => {
+    try {
+      const { patient_id, doctor_id, pharmacy_id, ...data } = req.body;
+      const file = req.file;
+      console.log(req.body, "req.body");
 
-app.post("/prescription/submit", upload.single(), async (req, res, next) => {
-  try {
-    const data = req.body;
-    const file = req.file;
-    console.log(data, file, "submit");
-    db = await connection();
-    db.collection("prescription")
-      .insertOne({ ...data, file: file.buffer.toString("base64") })
-      .then(() => {
-        res.json({
-          code: 1,
-          message: "Prescription is submitted successfully!",
-        });
+      console.log("Received File:", file);
+
+      if (!file) {
+        return res.status(400).json({ code: 0, message: "File is required!" });
+      }
+
+      const db = await connection();
+      const result = await db.collection("prescription").insertOne({
+        ...data,
+        patient_id: new ObjectId(patient_id),
+        doctor_id: new ObjectId(doctor_id),
+        // pharmacy_id: new ObjectId(pharmacy_id),
+        prescription_file: file.buffer.toString("base64"),
       });
-  } catch (err) {
-    next(err);
+
+      console.log("DB Insert Result:", result);
+
+      if (result.acknowledged) {
+        return res.json({
+          code: 1,
+          message: "Prescription submitted successfully!",
+        });
+      } else {
+        return res.status(500).json({
+          code: 0,
+          message: "Failed to insert into the database.",
+        });
+      }
+    } catch (err) {
+      console.error("Database Error:", err);
+      return res
+        .status(500)
+        .json({ code: 0, message: "Internal Server Error" });
+    }
   }
-});
+);
 
 app.get("/prescription/patient", async (req, res, next) => {
   try {
@@ -314,6 +342,81 @@ app.get("/prescription/patient", async (req, res, next) => {
 
     res.json({
       patientList: patientRes,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.get("/prescription/pharmacy", async (req, res, next) => {
+  try {
+    db = await connection();
+
+    const pharmacyList = await db
+      .collection("users")
+      .find({ account: "2" })
+      .toArray();
+
+    const pharmacyRes = pharmacyList.map(
+      ({
+        _id,
+        firstname,
+        lastname,
+        account,
+        email,
+        address,
+        city,
+        province,
+      }) => {
+        const res = {
+          _id,
+          firstname,
+          lastname,
+          account,
+          email,
+          address,
+          city,
+          province,
+        };
+        return res;
+      }
+    );
+    console.log(pharmacyRes, "pharmacyRes");
+    res.json({
+      pharmacyList: pharmacyRes,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.get("/prescription/city/:city", async (req, res, next) => {
+  try {
+    db = await connection();
+    const { city } = req.params;
+    console.log(city, "sssss");
+    const cityName = await db
+      .collection("cities")
+      .find({ _id: new ObjectId(city) })
+      .toArray();
+
+    res.json({
+      cityName,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.get("/prescription/province/:province", async (req, res, next) => {
+  try {
+    db = await connection();
+    const { province } = req.params;
+
+    const provinceName = await db
+      .collection("provinces")
+      .find({ _id: new ObjectId(province) })
+      .toArray();
+
+    res.json({
+      provinceName,
     });
   } catch (err) {
     next(err);
