@@ -9,6 +9,7 @@ const multer = require("multer");
 const upload = multer({ storage: multer.memoryStorage() });
 dotenv.config();
 
+// const doctorDashboardRoutes = require("./routes/doctorDashboard");
 const cors = require("cors"); //need this to set this API to allow requests from other servers
 const { MongoClient, ObjectId } = require("mongodb");
 
@@ -16,7 +17,6 @@ const app = express();
 const port = process.env.PORT || "3000";
 
 const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/mediBridge`;
-// const dbUrl = "mongodb://localhost:27017/mediBridge"; //default port is 27017
 const client = new MongoClient(dbUrl);
 sgMail.setApiKey(process.env.API_KEY);
 
@@ -39,7 +39,6 @@ const verification_time = 15 * 60 * 1000; // 15 minutes
 app.post("/register", async (request, response) => {
   //for POST data, retrieve field data using request.body.<field-name>
   //for a GET form, use app.get() and request.query.<field-name> to retrieve the GET form data
-
   //retrieve values from submitted POST form
   let {
     firstname,
@@ -51,57 +50,9 @@ app.post("/register", async (request, response) => {
     city,
     province,
     account,
+    license,
   } = request.body;
-  // let created = new Date();
-  // let deleted = null;
-  // // create a random number for code
-  // let verificationCode = Math.floor(100000 + Math.random() * 900000);
-  // bcrypt.hash(pass, 12).then((hash) => {
-  //   let infor = {
-  //     firstname: firstname,
-  //     lastname: lastname,
-  //     email: email,
-  //     password: hash,
-  //     phone: phone,
-  //     address: address,
-  //     city: city,
-  //     province: province,
-  //     account: acc,
-  //     created_at: created,
-  //     deleted_at: deleted,
-  //     verificationCode
-  //   };
 
-  //   // Send email verification to user
-  //   const emailData = {
-  //     to: email,
-  //     from: "hathaonhin@gmail.com",
-  //     subject: "Email Verification Code",
-  //     text: "Thank you for your registration. This is your code verification:",
-  //   };
-
-  //   try {
-  //     sgMail.send(emailData);
-  //     // console.log("Email sent successfully");
-
-  //     // Respond with booking information and QR code image path
-  //     response.status(201).json({
-  //       status: "success",
-  //       message: result.message,
-  //       booking: result,
-  //       qrImagePath: `/qr_codes/${bookingId}.png`,
-  //     });
-  //   } catch (emailError) {
-  //     console.error("Error sending email:", emailError.message);
-  //     response.status(500).json({
-  //       status: "error",
-  //       message: "An error occurred while sending the email",
-  //     });
-  //   }
-
-  //   account(infor);
-  //   response.json("success");
-  // });
   if (verificationCodes[email]) {
     return res.json("Verification already pending. Enter the code.");
   }
@@ -119,6 +70,7 @@ app.post("/register", async (request, response) => {
       city,
       province,
       account,
+      license,
     },
     expiresAt: Date.now() + verification_time,
   };
@@ -191,7 +143,6 @@ app.post("/verify", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   db = await connection();
-
   const user = await db.collection("users").findOne({ email });
 
   if (!user) {
@@ -210,7 +161,7 @@ app.post("/login", async (req, res) => {
       username: user.username,
       email: user.email,
       id: user._id,
-      accountType: user.account,
+      account: user.account,
     },
   });
 });
@@ -233,6 +184,12 @@ app.get("/api/accounts", async (request, response) => {
   response.json(accounts); //send JSON object with appropriate JSON headers
 });
 
+// Return list of precriptions in pharmacy dashboard
+app.get("/api/prescriptions", async (request, response) => {
+  let pres = await getPrescriptions();
+  response.json(pres); //send JSON object with appropriate JSON headers
+});
+
 //set up server listening
 app.listen(port, () => {
   console.log(`Listening on http://localhost:${port}`);
@@ -251,20 +208,50 @@ async function getProvinces() {
 /* Async function to retrieve all cities from scenarios collection. */
 async function getCities(provinceId) {
   db = await connection(); //await result of connection() and store the returned db
-
   const reid = new ObjectId(provinceId);
   var results = db.collection("cities").find({ provinceId: reid }).toArray(); //{} as the query means no filter, so select all
   return results;
 }
-/* Async function to retrieve all accounts from scenarios collection. */
+/* Async function to retrieve all accounts from accounts collection. */
 async function getAccounts() {
   db = await connection(); //await result of connection() and store the returned db
-
   var results = db.collection("accounts").find({}); //{} as the query means no filter, so select all
   res = await results.toArray();
   return res;
 }
 
+/* Async function to retrieve all prescriptions from prescriptions collection. */
+async function getPrescriptions() {
+  db = await connection(); //await result of connection() and store the returned db
+  // const db = mongoose.connection;
+  var results = db.collection("prescriptions"); //{} as the query means no filter, so select all
+  const combinedData = await results.aggregate([
+    {
+      $lookup: {
+        from: "users",
+        localField: "doctorId",
+        foreignField: "_id",
+        as: "doctor",
+      },
+    },
+    { $unwind: "$doctor" },
+
+    {
+      $project: {
+        _id: 1,
+        doctorId: 1,
+        "doctor.firstname": 1,
+        "doctor.lastname": 1,
+        prescription_file: 1,
+        created: 1,
+      },
+    },
+  ]);
+
+  const res = await combinedData.toArray();
+  console.log(res);
+  return res;
+}
 /**END FUNCTION TO RETRIEVE DATA */
 
 /**FUNCTION TO ADD DATA */
@@ -272,12 +259,12 @@ async function getAccounts() {
 
 async function account(userData) {
   db = await connection(); //await result of connection() and store the returned db
-
   let status = await db.collection("users").insertOne(userData);
   console.log(status);
 }
 
 // dashboard routes
+
 app.post(
   "/prescription/submit",
   upload.single("prescription_file"),
@@ -443,6 +430,7 @@ app.post("/prescription/addPatient", async (req, res, next) => {
   }
 });
 // MongoDB functions
+
 async function connection() {
   await client.connect();
   db = client.db("mediBridge"); //select paintball database
