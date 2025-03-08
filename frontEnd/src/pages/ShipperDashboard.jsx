@@ -12,6 +12,7 @@ const Dashboard = () => {
     const fetchOrders = async () => {
         try {
             const { data } = await axios.get("http://localhost:3000/api/orders");
+            console.log("Fetched Orders:", data); // ✅ Check API response in the browser console
             setOrders(data);
         } catch (error) {
             console.error("Error fetching orders:", error);
@@ -94,9 +95,9 @@ const Dashboard = () => {
                                 fontFamily: "Georgia, serif"
                             }}
                         >
-                            Order: {order.orderId}
+                            Order: {order._id}
                         </Typography>
-
+                            
                         {/* ✅ Added spacing between sections */}
                         <Typography sx={{ fontWeight: "bold", fontSize: "15px", fontFamily: "Georgia, serif", marginBottom: "20px", marginLeft: "-20px" }}>
                             Pharmacy’s Location :   {order.pharmacyLocation}
@@ -104,9 +105,9 @@ const Dashboard = () => {
                         
 
                         <Typography sx={{ fontWeight: "bold", fontSize: "15px", fontFamily: "Georgia, serif", marginBottom: "20px", marginLeft: "-65px" }}>
-                            Customer’s Location : {order.customerLocation}
+                            Customer’s Location : {order.customerLocation || "None"}
                         </Typography>
-                       
+                                                        
 
                         <Typography sx={{ fontWeight: "bold", fontSize: "15px", fontFamily: "Georgia, serif", marginBottom: "20px", marginLeft: "-405px" }}>
                             Remark : {order.remark || "None"}
