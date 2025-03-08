@@ -9,14 +9,14 @@ import PharmacyDashboard from "./PharmacyDashboard";
 
 export default function Dashboard() {
   const userInfo=localStorage.getItem("userInfo");
-  const {accountType}=JSON.parse(userInfo)||{};
+  const {account}=JSON.parse(userInfo)||{};
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "fit-content" }} className="container">
-     {accountType===ROLE_MAP.doctor&&<DoctorDashboard />} 
-     {accountType===ROLE_MAP.patient&&<PatientDashboard />} 
-     {accountType===ROLE_MAP.shipper&&<ShipperDashboard />} 
-     {accountType===ROLE_MAP.pharmacy&&<PharmacyDashboard />} 
+     {account===ROLE_MAP.doctor&&<DoctorDashboard />} 
+     {account===ROLE_MAP.patient&&<PatientDashboard />} 
+     {account===ROLE_MAP.shipper&&<ShipperDashboard />} 
+     {account===ROLE_MAP.pharmacy&&<PharmacyDashboard />} 
     </Box>
   );
 }

@@ -13,11 +13,11 @@ dotenv.config();
 const cors = require("cors"); //need this to set this API to allow requests from other servers
 const { MongoClient, ObjectId } = require("mongodb");
 
-
 const app = express();
 const port = process.env.PORT || "3000";
 
 const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/mediBridge`;
+console.log(dbUrl, "dbUrl");
 const client = new MongoClient(dbUrl);
 sgMail.setApiKey(process.env.API_KEY);
 
@@ -149,6 +149,7 @@ app.post("/login", async (req, res) => {
   if (!user) {
     return res.json({ code: 0, message: "Invalid username !" });
   }
+  console.log(user, "user");
   // To check a password:
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!user.password || !isPasswordValid) {
@@ -318,7 +319,7 @@ app.get("/prescription/patient", async (req, res, next) => {
 
     const patientList = await db
       .collection("users")
-      .find({ account: "3" })
+      .find({ account: "67b270a10a93bde65f142af3" })
       .toArray();
 
     const patientRes = patientList.map(
@@ -341,7 +342,7 @@ app.get("/prescription/pharmacy", async (req, res, next) => {
 
     const pharmacyList = await db
       .collection("users")
-      .find({ account: "2" })
+      .find({ account: "67b270940a93bde65f142af2" })
       .toArray();
 
     const pharmacyRes = pharmacyList.map(
@@ -354,6 +355,7 @@ app.get("/prescription/pharmacy", async (req, res, next) => {
         address,
         city,
         province,
+        // postalCode
       }) => {
         const res = {
           _id,
@@ -436,4 +438,3 @@ async function connection() {
   db = client.db("mediBridge"); //select paintball database
   return db;
 }
-
