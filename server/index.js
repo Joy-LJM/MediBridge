@@ -17,6 +17,7 @@ const app = express();
 const port = process.env.PORT || "3000";
 
 const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/mediBridge`;
+console.log(dbUrl, "dbUrl");
 const client = new MongoClient(dbUrl);
 sgMail.setApiKey(process.env.API_KEY);
 
@@ -148,6 +149,7 @@ app.post("/login", async (req, res) => {
   if (!user) {
     return res.json({ code: 0, message: "Invalid username !" });
   }
+  console.log(user, "user");
   // To check a password:
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!user.password || !isPasswordValid) {
