@@ -186,11 +186,15 @@ app.get("/api/accounts", async (request, response) => {
   response.json(accounts); //send JSON object with appropriate JSON headers
 });
 
+/** START OF PHARMACY SECTION */
 // Return list of precriptions in pharmacy dashboard
-app.get("/api/prescriptions", async (request, response) => {
-  let pres = await getPrescriptions();
+app.get("/api/pharmacy/prescriptions/:id", async (request, response) => {
+  let userId = request.params.id;
+  let pres = await getPharmacyPrescriptions(userId);
   response.json(pres); //send JSON object with appropriate JSON headers
 });
+
+/**END PHARMACY SECTION */
 
 //set up server listening
 app.listen(port, () => {
@@ -222,12 +226,13 @@ async function getAccounts() {
   return res;
 }
 
-/* Async function to retrieve all prescriptions from prescriptions collection. */
-async function getPrescriptions() {
+/* Async function to retrieve all prescriptions from prescriptions collection for pharmacy. */
+async function getPharmacyPrescriptions(id) {
   db = await connection(); //await result of connection() and store the returned db
-  // const db = mongoose.connection;
+  const userId = new ObjectId(id);
   var results = db.collection("prescriptions"); //{} as the query means no filter, so select all
   const combinedData = await results.aggregate([
+    { $match: { pharmacyId: userId } },
     {
       $lookup: {
         from: "users",
@@ -237,7 +242,16 @@ async function getPrescriptions() {
       },
     },
     { $unwind: "$doctor" },
-
+    {
+      $lookup: {
+        from: "deliveryStatus",
+        localField: "deliveryStatus",
+        foreignField: "_id",
+        as: "status",
+      },
+    },
+    { $unwind: "$status" },
+    { $match: { "status.status": "New" } },
     {
       $project: {
         _id: 1,
@@ -245,13 +259,14 @@ async function getPrescriptions() {
         "doctor.firstname": 1,
         "doctor.lastname": 1,
         prescription_file: 1,
+        "status.status": 1,
+        pharmacyId: 1,
         created: 1,
       },
     },
   ]);
 
   const res = await combinedData.toArray();
-  console.log(res);
   return res;
 }
 /**END FUNCTION TO RETRIEVE DATA */
