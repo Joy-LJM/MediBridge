@@ -262,6 +262,15 @@ async function getOrders() {
   db = await connection();
 
   var results = await db.collection("prescriptions").aggregate([
+    {
+      $lookup: {
+          from: "users",
+          localField: "pharmacyId",
+          foreignField: "_id",
+          as: "pharmacyDetails"
+      }
+  },
+  { $unwind: { path: "$pharmacyDetails", preserveNullAndEmptyArrays: true } }, // Unwind to get single patient object
       {
           $lookup: {
               from: "users",
@@ -283,7 +292,7 @@ async function getOrders() {
       {
           $project: {
               _id: 1,
-              pharmacyLocation: 1,
+              pharmacyLocation: "$pharmacyDetails.address",
               customerLocation: "$patientDetails.address", // ✅ Extract only the address
               remark: 1,
               status: "$statusDetails.status" // ✅ Extract status
