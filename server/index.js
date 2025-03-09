@@ -321,6 +321,50 @@ async function getAccounts() {
   return res;
 }
 
+/* Async function to retrieve all prescriptions from prescriptions collection for pharmacy. */
+async function getPharmacyPrescriptions(id) {
+  db = await connection(); //await result of connection() and store the returned db
+  const userId = new ObjectId(id);
+  var results = db.collection("prescriptions"); //{} as the query means no filter, so select all
+  const combinedData = await results.aggregate([
+    { $match: { pharmacyId: userId } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "doctorId",
+        foreignField: "_id",
+        as: "doctor",
+      },
+    },
+    { $unwind: "$doctor" },
+    {
+      $lookup: {
+        from: "deliveryStatus",
+        localField: "deliveryStatus",
+        foreignField: "_id",
+        as: "status",
+      },
+    },
+    { $unwind: "$status" },
+    { $match: { "status.status": "New" } },
+    {
+      $project: {
+        _id: 1,
+        doctorId: 1,
+        "doctor.firstname": 1,
+        "doctor.lastname": 1,
+        prescription_file: 1,
+        "status.status": 1,
+        pharmacyId: 1,
+        created: 1,
+      },
+    },
+  ]);
+
+  const res = await combinedData.toArray();
+  return res;
+}
+
 /**END FUNCTION TO RETRIEVE DATA */
 
 /**FUNCTION TO ADD DATA */
@@ -330,8 +374,19 @@ async function account(userData) {
   db = await connection(); //await result of connection() and store the returned db
 
   let status = await db.collection("users").insertOne(userData);
-  console.log(status);
+  
+  // console.log(status);
 }
+
+// Async function to update status of prescription
+async function status(id) {
+  db = await connection();
+  const preId = new ObjectId(id);
+  const result = db.collection("prescriptions").findOne({ _id: preId });
+  return result;
+}
+
+/**END FUNCTION TO ADD DATA */
 
 // dashboard routes
 
