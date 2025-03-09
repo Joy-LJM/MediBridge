@@ -4,12 +4,9 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
 const multer = require("multer");
-// const upload = multer({ dest: "uploads/" });
-
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ dest: "uploads/" });
 dotenv.config();
 
-// const doctorDashboardRoutes = require("./routes/doctorDashboard");
 const cors = require("cors"); //need this to set this API to allow requests from other servers
 const { MongoClient, ObjectId } = require("mongodb");
 
@@ -17,7 +14,7 @@ const app = express();
 const port = process.env.PORT || "3000";
 
 const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/mediBridge`;
-console.log(dbUrl, "dbUrl");
+// const dbUrl = "mongodb://localhost:27017/mediBridge"; //default port is 27017
 const client = new MongoClient(dbUrl);
 sgMail.setApiKey(process.env.API_KEY);
 
@@ -40,6 +37,7 @@ const verification_time = 15 * 60 * 1000; // 15 minutes
 app.post("/register", async (request, response) => {
   //for POST data, retrieve field data using request.body.<field-name>
   //for a GET form, use app.get() and request.query.<field-name> to retrieve the GET form data
+
   //retrieve values from submitted POST form
   let {
     firstname,
@@ -51,9 +49,57 @@ app.post("/register", async (request, response) => {
     city,
     province,
     account,
-    license,
   } = request.body;
+  // let created = new Date();
+  // let deleted = null;
+  // // create a random number for code
+  // let verificationCode = Math.floor(100000 + Math.random() * 900000);
+  // bcrypt.hash(pass, 12).then((hash) => {
+  //   let infor = {
+  //     firstname: firstname,
+  //     lastname: lastname,
+  //     email: email,
+  //     password: hash,
+  //     phone: phone,
+  //     address: address,
+  //     city: city,
+  //     province: province,
+  //     account: acc,
+  //     created_at: created,
+  //     deleted_at: deleted,
+  //     verificationCode
+  //   };
 
+  //   // Send email verification to user
+  //   const emailData = {
+  //     to: email,
+  //     from: "hathaonhin@gmail.com",
+  //     subject: "Email Verification Code",
+  //     text: "Thank you for your registration. This is your code verification:",
+  //   };
+
+  //   try {
+  //     sgMail.send(emailData);
+  //     // console.log("Email sent successfully");
+
+  //     // Respond with booking information and QR code image path
+  //     response.status(201).json({
+  //       status: "success",
+  //       message: result.message,
+  //       booking: result,
+  //       qrImagePath: `/qr_codes/${bookingId}.png`,
+  //     });
+  //   } catch (emailError) {
+  //     console.error("Error sending email:", emailError.message);
+  //     response.status(500).json({
+  //       status: "error",
+  //       message: "An error occurred while sending the email",
+  //     });
+  //   }
+
+  //   account(infor);
+  //   response.json("success");
+  // });
   if (verificationCodes[email]) {
     return res.json("Verification already pending. Enter the code.");
   }
@@ -71,7 +117,6 @@ app.post("/register", async (request, response) => {
       city,
       province,
       account,
-      license,
     },
     expiresAt: Date.now() + verification_time,
   };
@@ -167,6 +212,7 @@ app.post("/login", async (req, res) => {
     },
   });
 });
+
 // Return list of provinces
 app.get("/api/provinces", async (request, response) => {
   let provinces = await getProvinces();
@@ -186,11 +232,36 @@ app.get("/api/accounts", async (request, response) => {
   response.json(accounts); //send JSON object with appropriate JSON headers
 });
 
+/** START OF PHARMACY SECTION */
 // Return list of precriptions in pharmacy dashboard
-app.get("/api/prescriptions", async (request, response) => {
-  let pres = await getPrescriptions();
-
+app.get("/api/pharmacy/prescriptions/:id", async (request, response) => {
+  let userId = request.params.id;
+  let pres = await getPharmacyPrescriptions(userId);
   response.json(pres); //send JSON object with appropriate JSON headers
+});
+
+//Update status of prescription
+app.put("/api/pharmacy/prescription/update/:id", async (req, res) => {
+  let preId = req.params.id;
+  let { deliveryStatus } = req.body;
+
+  const statusId = await getStatusId(deliveryStatus);
+  const result = await updateStatus(preId, statusId);
+
+  // Respond with appropriate status and message
+  res.status(result.status).json({
+    status: result.status === 200 ? "success" : "error",
+    message: result.message,
+  });
+});
+
+/**END PHARMACY SECTION */
+
+//Return list of orders
+app.get("/api/orders", async (request, response) => {
+  let orders = await getOrders();
+  console.log(orders);
+  response.json(orders); //send JSON object with appropriate JSON headers
 });
 
 //set up server listening
@@ -208,27 +279,85 @@ async function getProvinces() {
   res = results.toArray();
   return res;
 }
+
+/* Async function to retrieve all orders*/
+async function getOrders() {
+  db = await connection();
+
+  var results = await db
+    .collection("prescriptions")
+    .aggregate([
+      {
+        $lookup: {
+          from: "users",
+          localField: "pharmacyId",
+          foreignField: "_id",
+          as: "pharmacyDetails",
+        },
+      },
+      {
+        $unwind: { path: "$pharmacyDetails", preserveNullAndEmptyArrays: true },
+      }, // Unwind to get single patient object
+      {
+        $lookup: {
+          from: "users",
+          localField: "patientId",
+          foreignField: "_id",
+          as: "patientDetails",
+        },
+      },
+      {
+        $unwind: { path: "$patientDetails", preserveNullAndEmptyArrays: true },
+      }, // ✅ Unwind to get single patient object
+      {
+        $lookup: {
+          from: "deliveryStatus",
+          localField: "deliveryStatus",
+          foreignField: "_id",
+          as: "statusDetails",
+        },
+      },
+      { $unwind: { path: "$statusDetails", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          pharmacyLocation: "$pharmacyDetails.address",
+          customerLocation: "$patientDetails.address", // ✅ Extract only the address
+          remark: 1,
+          status: "$statusDetails.status", // ✅ Extract status
+        },
+      },
+    ])
+    .toArray();
+
+  console.log("Orders with Patient Address:", results); // ✅ Debugging log
+  return results;
+}
+
 /* Async function to retrieve all cities from scenarios collection. */
 async function getCities(provinceId) {
   db = await connection(); //await result of connection() and store the returned db
+
   const reid = new ObjectId(provinceId);
   var results = db.collection("cities").find({ provinceId: reid }).toArray(); //{} as the query means no filter, so select all
   return results;
 }
-/* Async function to retrieve all accounts from accounts collection. */
+/* Async function to retrieve all accounts from scenarios collection. */
 async function getAccounts() {
   db = await connection(); //await result of connection() and store the returned db
+
   var results = db.collection("accounts").find({}); //{} as the query means no filter, so select all
   res = await results.toArray();
   return res;
 }
 
-/* Async function to retrieve all prescriptions from prescriptions collection. */
-async function getPrescriptions() {
+/* Async function to retrieve all prescriptions from prescriptions collection for pharmacy. */
+async function getPharmacyPrescriptions(id) {
   db = await connection(); //await result of connection() and store the returned db
-  // const db = mongoose.connection;
+  const userId = new ObjectId(id);
   var results = db.collection("prescriptions"); //{} as the query means no filter, so select all
   const combinedData = await results.aggregate([
+    { $match: { pharmacyId: userId } },
     {
       $lookup: {
         from: "users",
@@ -238,7 +367,15 @@ async function getPrescriptions() {
       },
     },
     { $unwind: "$doctor" },
-
+    {
+      $lookup: {
+        from: "deliveryStatus",
+        localField: "deliveryStatus",
+        foreignField: "_id",
+        as: "status",
+      },
+    },
+    { $unwind: "$status" },
     {
       $project: {
         _id: 1,
@@ -246,15 +383,17 @@ async function getPrescriptions() {
         "doctor.firstname": 1,
         "doctor.lastname": 1,
         prescription_file: 1,
+        "status.status": 1,
+        pharmacyId: 1,
         created: 1,
       },
     },
   ]);
 
   const res = await combinedData.toArray();
-  console.log(res);
   return res;
 }
+
 /**END FUNCTION TO RETRIEVE DATA */
 
 /**FUNCTION TO ADD DATA */
@@ -262,9 +401,45 @@ async function getPrescriptions() {
 
 async function account(userData) {
   db = await connection(); //await result of connection() and store the returned db
+
   let status = await db.collection("users").insertOne(userData);
-  console.log(status);
+
+  // console.log(status);
 }
+
+//Async function to get status id through status name
+async function getStatusId(deliveryStatus) {
+  db = await connection();
+  const statusDoc = await db
+    .collection("deliveryStatus")
+    .findOne({ status: deliveryStatus });
+  return statusDoc._id;
+}
+
+// Async function to update status of prescription
+async function updateStatus(id, statusId) {
+  db = await connection();
+  const preId = new ObjectId(id);
+  const result = await db
+    .collection("prescriptions")
+    .updateOne(
+      { _id: preId },
+      { $set: { deliveryStatus: statusId, updated_at: new Date() } }
+    );
+
+  if (result.modifiedCount === 0) {
+    return { status: 404, message: "Prescription not found" };
+  }
+
+  const updatedStatus = db.collection("prescriptions").findOne({ _id: preId });
+  return {
+    status: 200,
+    message: "A Status updated successfully",
+    schedule: updatedStatus,
+  };
+}
+
+/**END FUNCTION TO ADD DATA */
 
 // dashboard routes
 
@@ -297,19 +472,11 @@ app.post(
       if (result.acknowledged) {
         return res.json({
           code: 1,
-          message: "Prescription submitted successfully!",
-        });
-      } else {
-        return res.status(500).json({
-          code: 0,
-          message: "Failed to insert into the database.",
+          message: "Prescription is submitted successfully!",
         });
       }
     } catch (err) {
-      console.error("Database Error:", err);
-      return res
-        .status(500)
-        .json({ code: 0, message: "Internal Server Error" });
+      next(err);
     }
   }
 );
@@ -320,7 +487,7 @@ app.get("/prescription/patient", async (req, res, next) => {
 
     const patientList = await db
       .collection("users")
-      .find({ account: "67b270a10a93bde65f142af3" })
+      .find({ account: "3" })
       .toArray();
 
     const patientRes = await Promise.all(
@@ -457,7 +624,6 @@ app.post("/prescription/addPatient", async (req, res, next) => {
   }
 });
 // MongoDB functions
-
 async function connection() {
   await client.connect();
   db = client.db("mediBridge"); //select paintball database

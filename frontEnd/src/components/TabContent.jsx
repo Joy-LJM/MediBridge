@@ -20,7 +20,7 @@ function TabPanel(props) {
     >
       {value === index && (
         <Box sx={{ p: 3 }}>
-          <Typography>{children}</Typography>
+          <Typography variant="h6">{children}</Typography>
         </Box>
       )}
     </div>
@@ -49,16 +49,37 @@ export default function TabContent({ label, children }) {
 
   return (
     <Box
-      sx={{ flexGrow: 1, bgcolor: "#D1E3C4", display: "flex", height: "100vh" }}
+      sx={{
+        flexGrow: 1,
+        bgcolor: "white", // Sidebar background color
+        display: "flex",
+      }}
     >
       <Tabs
         orientation="vertical"
         value={value}
         onChange={handleChange}
         aria-label="dashboard"
-        sx={{ borderRight: 1, borderColor: "divider" }}
+        sx={{
+          width: "15vw",
+          borderRight: 1,
+          borderColor: "divider",
+          backgroundColor: "#689D6D",
+          color: "white",
+          "& .MuiTab-root": { color: "white !important" }, // Sets default text color to white
+          "& .Mui-selected": {
+            color: "white !important",
+            fontWeight: "bold",
+            fontSize: 20,
+          }, // Ensures selected tab is also white
+        }}
       >
-        <Tab label={label} aria-selected {...a11yProps(0)} />
+        <Tab
+          label={label}
+          sx={{ color: "white" }}
+          aria-selected
+          {...a11yProps(0)}
+        />
       </Tabs>
       <TabPanel value={value} index={0}>
         <Card
@@ -67,6 +88,8 @@ export default function TabContent({ label, children }) {
             paddingTop: 4,
             paddingBottom: 2,
             textAlign: "center",
+            boxShadow: "none",
+            margin: 0,
           }}
         >
           {children}
