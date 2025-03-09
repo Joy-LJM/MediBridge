@@ -267,6 +267,7 @@ async function getPharmacyPrescriptions(id) {
   const res = await combinedData.toArray();
   return res;
 }
+
 /**END FUNCTION TO RETRIEVE DATA */
 
 /**FUNCTION TO ADD DATA */
@@ -275,8 +276,19 @@ async function getPharmacyPrescriptions(id) {
 async function account(userData) {
   db = await connection(); //await result of connection() and store the returned db
   let status = await db.collection("users").insertOne(userData);
-  console.log(status);
+  
+  // console.log(status);
 }
+
+// Async function to update status of prescription
+async function status(id) {
+  db = await connection();
+  const preId = new ObjectId(id);
+  const result = db.collection("prescriptions").findOne({ _id: preId });
+  return result;
+}
+
+/**END FUNCTION TO ADD DATA */
 
 // dashboard routes
 
