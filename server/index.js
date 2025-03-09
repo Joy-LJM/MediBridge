@@ -189,6 +189,7 @@ app.get("/api/accounts", async (request, response) => {
 // Return list of precriptions in pharmacy dashboard
 app.get("/api/prescriptions", async (request, response) => {
   let pres = await getPrescriptions();
+
   response.json(pres); //send JSON object with appropriate JSON headers
 });
 
@@ -283,12 +284,12 @@ app.post(
       }
 
       const db = await connection();
-      const result = await db.collection("prescription").insertOne({
+      const result = await db.collection("prescriptions").insertOne({
         ...data,
         patient_id: new ObjectId(patient_id),
         doctor_id: new ObjectId(doctor_id),
-        // pharmacy_id: new ObjectId(pharmacy_id),
-        prescription_file: file.buffer.toString("base64"),
+        pharmacy_id: new ObjectId(pharmacy_id),
+        prescription_file: file,
       });
 
       console.log("DB Insert Result:", result);
@@ -322,11 +323,35 @@ app.get("/prescription/patient", async (req, res, next) => {
       .find({ account: "67b270a10a93bde65f142af3" })
       .toArray();
 
-    const patientRes = patientList.map(
-      ({ _id, firstname, lastname, account, email, address }) => {
-        const res = { _id, firstname, lastname, account, email, address };
-        return res;
-      }
+    const patientRes = await Promise.all(
+      patientList.map(
+        async ({
+          _id,
+          firstname,
+          lastname,
+          account,
+          email,
+          address,
+          city,
+          province,
+        }) => {
+          const [cityData, provinceData] = await Promise.all([
+            db.collection("cities").findOne({ _id: new ObjectId(city) }),
+            db.collection("provinces").findOne({ _id: new ObjectId(province) }),
+          ]);
+          console.log(cityData, "cityData");
+          return {
+            _id,
+            firstname,
+            lastname,
+            account,
+            email,
+            address,
+            city: cityData ? cityData.name : null,
+            province: provinceData ? provinceData.name : null,
+          };
+        }
+      )
     );
 
     res.json({
@@ -385,8 +410,7 @@ app.get("/prescription/city/:city", async (req, res, next) => {
     console.log(city, "sssss");
     const cityName = await db
       .collection("cities")
-      .find({ _id: new ObjectId(city) })
-      .toArray();
+      .findOne({ _id: new ObjectId(city) });
 
     res.json({
       cityName,
@@ -402,8 +426,7 @@ app.get("/prescription/province/:province", async (req, res, next) => {
 
     const provinceName = await db
       .collection("provinces")
-      .find({ _id: new ObjectId(province) })
-      .toArray();
+      .findOne({ _id: new ObjectId(province) });
 
     res.json({
       provinceName,
@@ -429,6 +452,8 @@ app.post("/prescription/addPatient", async (req, res, next) => {
       });
   } catch (err) {
     next(err);
+  } finally {
+    if (db) client.close(); // Close connection
   }
 });
 // MongoDB functions

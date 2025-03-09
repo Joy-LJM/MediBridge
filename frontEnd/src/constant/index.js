@@ -4,6 +4,12 @@ const ROLE_MAP = {
   patient: "67b270a10a93bde65f142af3",
   shipper: "67b270b10a93bde65f142af4",
 };
+const ORDER_STATUS_MAP = {
+  NEW: "67ca8e5d3b3a4ffbb7d77b95",
+  pharmacy: "67b270940a93bde65f142af2",
+  patient: "67b270a10a93bde65f142af3",
+  shipper: "67b270b10a93bde65f142af4",
+};
 const SUCCESS_CODE = 1;
 
 const HOST_URL = "http://localhost:3000";
@@ -20,4 +26,5 @@ export {
   SUBMIT_PRESCRIPTION,
   ADD_PATIENT,
   GET_PHARMACY_LIST,
+  ORDER_STATUS_MAP,
 };

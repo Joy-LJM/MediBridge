@@ -20,6 +20,7 @@ import axios from "axios";
 import {
   ADD_PATIENT,
   GET_PATIENT_LIST,
+  ORDER_STATUS_MAP,
   SUBMIT_PRESCRIPTION,
   SUCCESS_CODE,
 } from "../constant";
@@ -34,7 +35,7 @@ const formErr = {
 };
 export default function DoctorDashboard() {
   const [formData, setFormData] = useState({
-    files: [],
+    files: null,
     selectedPharmacy: "",
     remark: "",
     patient: "",
@@ -56,22 +57,25 @@ export default function DoctorDashboard() {
   const [patientFormError, setPatientFormError] = useState(formErr);
   const [pharmacies, setPharmacies] = useState([]);
   const { files } = formData || {};
-  const onFileUpload = (files) => {
-    setFormData({
-      ...formData,
-      files: Array.from(files)[0],
-    });
+  const onFileUpload = (event) => {
+    const uploadedFile=event.target.files[0];
+    console.log(uploadedFile,'uploadedFile');
+    
+    if(!uploadedFile) return;
+
+
+    setFormData((prev) => ({
+      ...prev,
+      files: uploadedFile, // Store the single file
+    }));
   };
   const FileNameText = useCallback(() => {
-    if (files.length > 0) {
-      const fileNames = files.map((file) => file.name);
-      return (
-        <div style={{ color: "#457447", marginTop: 5 }}>
-          {fileNames.join(", ")}
-        </div>
-      );
+    if (files) {
+     return <div style={{ color: "#457447", marginTop: 5 }}>
+      {files.name} {/* Display the single file name */}
+    </div>
     }
-    return null;
+    // return null;
   }, [files]);
 
   const handleSubmit = useCallback(async () => {
@@ -106,16 +110,13 @@ export default function DoctorDashboard() {
     ) {
       const data = new FormData();
       const { id: doctor_id } = JSON.parse(localStorage.getItem("userInfo"));
-
-      // shipper_id
-      // completed_date
       data.append("prescription_file", files);
       data.append("patient_id", patient._id);
       data.append("doctor_id", doctor_id);
       data.append("remark", remark);
       data.append("pharmacy_id", selectedPharmacy);
       data.append("uploaded_date", new Date());
-      data.append("delivery_status", "Pending");
+      data.append("delivery_status", ORDER_STATUS_MAP.NEW);
 
       const { data: response } = await axios.post(SUBMIT_PRESCRIPTION, data, {
         headers: {
@@ -258,8 +259,7 @@ export default function DoctorDashboard() {
                 required
                 className="upload"
                 accept=".pdf"
-                onChange={(event) => onFileUpload(event.target.files)}
-                // multiple
+                onChange={onFileUpload}
               />
             </Button>
             <FormHelperText error={!!error.filesErr}>
