@@ -487,7 +487,7 @@ app.get("/prescription/patient", async (req, res, next) => {
 
     const patientList = await db
       .collection("users")
-      .find({ account: "3" })
+      .find({ account: "67b270a10a93bde65f142af3" })
       .toArray();
 
     const patientRes = await Promise.all(
@@ -506,7 +506,7 @@ app.get("/prescription/patient", async (req, res, next) => {
             db.collection("cities").findOne({ _id: new ObjectId(city) }),
             db.collection("provinces").findOne({ _id: new ObjectId(province) }),
           ]);
-          console.log(cityData, "cityData");
+
           return {
             _id,
             firstname,
@@ -609,9 +609,18 @@ app.post("/prescription/addPatient", async (req, res, next) => {
     db = await connection();
     db.collection("users")
       .insertOne(data)
-      .then(() => {
+      .then(async () => {
         // send email to user
+        // Send verification email
+        const emailData = {
+          to: email,
+          from: "hathaonhin@gmail.com",
+          subject: "Welcome to MediBridge!",
+          text: `Your MediBridge account is registered successfully. `,
+          html: `<p>Your MediBridge account is registered successfully. Your initial password is: <strong>123456</strong>, please update your password later.</p>`,
+        };
 
+        await sgMail.send(emailData);
         res.json({
           code: 1,
           message: "Add patient successfully!",
@@ -619,8 +628,6 @@ app.post("/prescription/addPatient", async (req, res, next) => {
       });
   } catch (err) {
     next(err);
-  } finally {
-    if (db) client.close(); // Close connection
   }
 });
 // MongoDB functions
