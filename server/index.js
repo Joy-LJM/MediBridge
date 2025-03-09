@@ -189,12 +189,12 @@ app.post("/verify", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   db = await connection();
-
   const user = await db.collection("users").findOne({ email });
 
   if (!user) {
     return res.json({ code: 0, message: "Invalid username !" });
   }
+  console.log(user, "user");
   // To check a password:
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!user.password || !isPasswordValid) {
@@ -208,7 +208,7 @@ app.post("/login", async (req, res) => {
       username: user.username,
       email: user.email,
       id: user._id,
-      accountType: user.account,
+      account: user.account,
     },
   });
 });
@@ -443,24 +443,43 @@ async function updateStatus(id, statusId) {
 
 // dashboard routes
 
-app.post("/prescription/submit", upload.single(), async (req, res, next) => {
-  try {
-    const data = req.body;
-    const file = req.file;
-    console.log(data, file, "submit");
-    db = await connection();
-    db.collection("prescription")
-      .insertOne({ ...data, file: file.buffer.toString("base64") })
-      .then(() => {
-        res.json({
+app.post(
+  "/prescription/submit",
+  upload.single("prescription_file"),
+  async (req, res, next) => {
+    try {
+      const { patient_id, doctor_id, pharmacy_id, ...data } = req.body;
+      const file = req.file;
+      console.log(req.body, "req.body");
+
+      console.log("Received File:", file);
+
+      if (!file) {
+        return res.status(400).json({ code: 0, message: "File is required!" });
+      }
+
+      const db = await connection();
+      const result = await db.collection("prescriptions").insertOne({
+        ...data,
+        patient_id: new ObjectId(patient_id),
+        doctor_id: new ObjectId(doctor_id),
+        pharmacy_id: new ObjectId(pharmacy_id),
+        prescription_file: file,
+      });
+
+      console.log("DB Insert Result:", result);
+
+      if (result.acknowledged) {
+        return res.json({
           code: 1,
           message: "Prescription is submitted successfully!",
         });
-      });
-  } catch (err) {
-    next(err);
+      }
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 app.get("/prescription/patient", async (req, res, next) => {
   try {
@@ -471,15 +490,113 @@ app.get("/prescription/patient", async (req, res, next) => {
       .find({ account: "3" })
       .toArray();
 
-    const patientRes = patientList.map(
-      ({ _id, firstname, lastname, account, email, address }) => {
-        const res = { _id, firstname, lastname, account, email, address };
-        return res;
-      }
+    const patientRes = await Promise.all(
+      patientList.map(
+        async ({
+          _id,
+          firstname,
+          lastname,
+          account,
+          email,
+          address,
+          city,
+          province,
+        }) => {
+          const [cityData, provinceData] = await Promise.all([
+            db.collection("cities").findOne({ _id: new ObjectId(city) }),
+            db.collection("provinces").findOne({ _id: new ObjectId(province) }),
+          ]);
+          console.log(cityData, "cityData");
+          return {
+            _id,
+            firstname,
+            lastname,
+            account,
+            email,
+            address,
+            city: cityData ? cityData.name : null,
+            province: provinceData ? provinceData.name : null,
+          };
+        }
+      )
     );
 
     res.json({
       patientList: patientRes,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.get("/prescription/pharmacy", async (req, res, next) => {
+  try {
+    db = await connection();
+
+    const pharmacyList = await db
+      .collection("users")
+      .find({ account: "67b270940a93bde65f142af2" })
+      .toArray();
+
+    const pharmacyRes = pharmacyList.map(
+      ({
+        _id,
+        firstname,
+        lastname,
+        account,
+        email,
+        address,
+        city,
+        province,
+        // postalCode
+      }) => {
+        const res = {
+          _id,
+          firstname,
+          lastname,
+          account,
+          email,
+          address,
+          city,
+          province,
+        };
+        return res;
+      }
+    );
+    console.log(pharmacyRes, "pharmacyRes");
+    res.json({
+      pharmacyList: pharmacyRes,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.get("/prescription/city/:city", async (req, res, next) => {
+  try {
+    db = await connection();
+    const { city } = req.params;
+    console.log(city, "sssss");
+    const cityName = await db
+      .collection("cities")
+      .findOne({ _id: new ObjectId(city) });
+
+    res.json({
+      cityName,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.get("/prescription/province/:province", async (req, res, next) => {
+  try {
+    db = await connection();
+    const { province } = req.params;
+
+    const provinceName = await db
+      .collection("provinces")
+      .findOne({ _id: new ObjectId(province) });
+
+    res.json({
+      provinceName,
     });
   } catch (err) {
     next(err);
@@ -502,6 +619,8 @@ app.post("/prescription/addPatient", async (req, res, next) => {
       });
   } catch (err) {
     next(err);
+  } finally {
+    if (db) client.close(); // Close connection
   }
 });
 // MongoDB functions

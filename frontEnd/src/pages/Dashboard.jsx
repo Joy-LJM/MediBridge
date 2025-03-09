@@ -13,6 +13,7 @@ export default function Dashboard() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "fit-content" }} className="container">
+    
      {account===ROLE_MAP.doctor&&<DoctorDashboard />} 
      {account===ROLE_MAP.patient&&<PatientDashboard />} 
      {account===ROLE_MAP.shipper&&<ShipperDashboard />} 
