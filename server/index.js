@@ -3,12 +3,16 @@ const path = require("path"); // module to help with file path
 const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
+const multer = require("multer");
+// const upload = multer({ dest: "uploads/" });
 
+const upload = multer({ storage: multer.memoryStorage() });
 dotenv.config();
+
 // const doctorDashboardRoutes = require("./routes/doctorDashboard");
 const cors = require("cors"); //need this to set this API to allow requests from other servers
 const { MongoClient, ObjectId } = require("mongodb");
-// const { Connection, default: mongoose } = require("mongoose");
+
 
 const app = express();
 const port = process.env.PORT || "3000";
@@ -140,7 +144,6 @@ app.post("/verify", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   db = await connection();
-  //const db = mongoose.connection;
   const user = await db.collection("users").findOne({ email });
 
   if (!user) {
@@ -148,9 +151,8 @@ app.post("/login", async (req, res) => {
   }
   // To check a password:
   const isPasswordValid = await bcrypt.compare(password, user.password);
-
-  if (!isPasswordValid) {
-    return res.json({ code: 0, message: "Invalid  password !" });
+  if (!user.password || !isPasswordValid) {
+    return res.json({ code: 0, message: "Invalid password !" });
   }
 
   res.json({
@@ -203,7 +205,7 @@ app.listen(port, () => {
 /* Async function to retrieve all provinces from scenarios collection. */
 async function getProvinces() {
   db = await connection(); //await result of connection() and store the returned db
-  //const db = mongoose.connection;
+
   var results = await db.collection("provinces").find({}); //{} as the query means no filter, so select all
   res = results.toArray();
   return res;
@@ -211,7 +213,6 @@ async function getProvinces() {
 /* Async function to retrieve all cities from scenarios collection. */
 async function getCities(provinceId) {
   db = await connection(); //await result of connection() and store the returned db
-  //const db = mongoose.connection;
   const reid = new ObjectId(provinceId);
   var results = db.collection("cities").find({ provinceId: reid }).toArray(); //{} as the query means no filter, so select all
   return results;
@@ -219,7 +220,6 @@ async function getCities(provinceId) {
 /* Async function to retrieve all accounts from accounts collection. */
 async function getAccounts() {
   db = await connection(); //await result of connection() and store the returned db
-  // const db = mongoose.connection;
   var results = db.collection("accounts").find({}); //{} as the query means no filter, so select all
   res = await results.toArray();
   return res;
@@ -275,12 +275,177 @@ async function getPharmacyPrescriptions(id) {
 
 async function account(userData) {
   db = await connection(); //await result of connection() and store the returned db
-  //const db = mongoose.connection;
   let status = await db.collection("users").insertOne(userData);
   console.log(status);
 }
 
-//MongoDB functions
+// dashboard routes
+
+app.post(
+  "/prescription/submit",
+  upload.single("prescription_file"),
+  async (req, res, next) => {
+    try {
+      const { patient_id, doctor_id, pharmacy_id, ...data } = req.body;
+      const file = req.file;
+      console.log(req.body, "req.body");
+
+      console.log("Received File:", file);
+
+      if (!file) {
+        return res.status(400).json({ code: 0, message: "File is required!" });
+      }
+
+      const db = await connection();
+      const result = await db.collection("prescription").insertOne({
+        ...data,
+        patient_id: new ObjectId(patient_id),
+        doctor_id: new ObjectId(doctor_id),
+        // pharmacy_id: new ObjectId(pharmacy_id),
+        prescription_file: file.buffer.toString("base64"),
+      });
+
+      console.log("DB Insert Result:", result);
+
+      if (result.acknowledged) {
+        return res.json({
+          code: 1,
+          message: "Prescription submitted successfully!",
+        });
+      } else {
+        return res.status(500).json({
+          code: 0,
+          message: "Failed to insert into the database.",
+        });
+      }
+    } catch (err) {
+      console.error("Database Error:", err);
+      return res
+        .status(500)
+        .json({ code: 0, message: "Internal Server Error" });
+    }
+  }
+);
+
+app.get("/prescription/patient", async (req, res, next) => {
+  try {
+    db = await connection();
+
+    const patientList = await db
+      .collection("users")
+      .find({ account: "3" })
+      .toArray();
+
+    const patientRes = patientList.map(
+      ({ _id, firstname, lastname, account, email, address }) => {
+        const res = { _id, firstname, lastname, account, email, address };
+        return res;
+      }
+    );
+
+    res.json({
+      patientList: patientRes,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.get("/prescription/pharmacy", async (req, res, next) => {
+  try {
+    db = await connection();
+
+    const pharmacyList = await db
+      .collection("users")
+      .find({ account: "2" })
+      .toArray();
+
+    const pharmacyRes = pharmacyList.map(
+      ({
+        _id,
+        firstname,
+        lastname,
+        account,
+        email,
+        address,
+        city,
+        province,
+      }) => {
+        const res = {
+          _id,
+          firstname,
+          lastname,
+          account,
+          email,
+          address,
+          city,
+          province,
+        };
+        return res;
+      }
+    );
+    console.log(pharmacyRes, "pharmacyRes");
+    res.json({
+      pharmacyList: pharmacyRes,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.get("/prescription/city/:city", async (req, res, next) => {
+  try {
+    db = await connection();
+    const { city } = req.params;
+    console.log(city, "sssss");
+    const cityName = await db
+      .collection("cities")
+      .find({ _id: new ObjectId(city) })
+      .toArray();
+
+    res.json({
+      cityName,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.get("/prescription/province/:province", async (req, res, next) => {
+  try {
+    db = await connection();
+    const { province } = req.params;
+
+    const provinceName = await db
+      .collection("provinces")
+      .find({ _id: new ObjectId(province) })
+      .toArray();
+
+    res.json({
+      provinceName,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.post("/prescription/addPatient", async (req, res, next) => {
+  try {
+    const data = req.body || {};
+    const { email } = data;
+    db = await connection();
+    db.collection("users")
+      .insertOne(data)
+      .then(() => {
+        // send email to user
+
+        res.json({
+          code: 1,
+          message: "Add patient successfully!",
+        });
+      });
+  } catch (err) {
+    next(err);
+  }
+});
+// MongoDB functions
+
 async function connection() {
   await client.connect();
   db = client.db("mediBridge"); //select paintball database
