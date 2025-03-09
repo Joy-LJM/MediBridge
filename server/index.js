@@ -49,6 +49,7 @@ app.post("/register", async (request, response) => {
     city,
     province,
     account,
+    license,
   } = request.body;
 
   if (verificationCodes[email]) {
@@ -68,6 +69,7 @@ app.post("/register", async (request, response) => {
       city,
       province,
       account,
+      license,
     },
     expiresAt: Date.now() + verification_time,
   };
@@ -159,7 +161,7 @@ app.post("/login", async (req, res) => {
       username: user.username,
       email: user.email,
       id: user._id,
-      accountType: user.account,
+      account: user.account,
     },
   });
 });
@@ -187,6 +189,7 @@ app.get("/api/accounts", async (request, response) => {
 // Return list of precriptions in pharmacy dashboard
 app.get("/api/pharmacy/prescriptions/:id", async (request, response) => {
   let userId = request.params.id;
+  // console.log(userId);
   let pres = await getPharmacyPrescriptions(userId);
   response.json(pres); //send JSON object with appropriate JSON headers
 });
@@ -317,7 +320,7 @@ async function getPharmacyPrescriptions(id) {
         as: "doctor",
       },
     },
-    { $unwind: "$doctor" },
+    { $unwind: { path: "$doctor", preserveNullAndEmptyArrays: true } },
     {
       $lookup: {
         from: "deliveryStatus",
@@ -326,7 +329,7 @@ async function getPharmacyPrescriptions(id) {
         as: "status",
       },
     },
-    { $unwind: "$status" },
+    { $unwind: { path: "$status", preserveNullAndEmptyArrays: true } },
     {
       $project: {
         _id: 1,
