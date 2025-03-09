@@ -86,15 +86,6 @@ export default function PharmacyDashboard() {
                 {pres.doctor?.firstname} {pres.doctor?.lastname}
               </Grid>
             </Grid>
-            <Grid container spacing={2}>
-            <Button
-                  onClick={() => handlePdfClick(pres.prescription_file)}
-                  variant="contained"
-                  color="primary"
-                >
-                  View Prescription
-                </Button>
-            </Grid>
           </Box>
         ))}
       </TabContent>
