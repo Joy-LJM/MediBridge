@@ -57,14 +57,40 @@ export default function PharmacyDashboard() {
   };
 
   //Function to handle button click
-  const handleButton = ()=>{
-    
-  }
+  const handleButton = async (presId, action) => {
+    try {
+      const status =
+        action === "accept"
+          ? "Preparing"
+          : action === "declined"
+          ? "Declined"
+          : action === "ready"
+          ? "Pending"
+          : action === "delivered_shipper"
+          ? "Delivering"
+          : "Completed";
+
+      // Await the API request to ensure it's completed
+      await axios.put(
+        `http://localhost:3000/api/pharmacy/prescription/update/${presId}`,
+        { deliveryStatus: status }
+      );
+
+      // Update local state based on the correct status name
+      setPrescriptions((prev) =>
+        prev.map((pres) =>
+          pres._id === presId ? { ...pres, status: { status } } : pres
+        )
+      );
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
   return (
     <>
       <ToastContainer />
-      <TabContent label="New Prescription" sx={{ color: "white" }}>
+      <TabContent label="Orders" sx={{ color: "white" }}>
         <Box sx={{ display: "flex" }}>
           <Container maxWidth="md" sx={{ marginTop: "30px" }}>
             <Typography variant="h4" sx={{ my: 3, textAlign: "center" }}>
@@ -105,7 +131,8 @@ export default function PharmacyDashboard() {
                           fontSize: "15px",
                           fontFamily: "Georgia, serif",
                           marginBottom: "20px",
-                          marginLeft: "-150px",
+                          marginLeft: "100px",
+                          textAlign: "left",
                         }}
                       >
                         Prescription : {/* Clickable PDF to open in modal */}
@@ -123,8 +150,9 @@ export default function PharmacyDashboard() {
                           fontWeight: "bold",
                           fontSize: "15px",
                           fontFamily: "Georgia, serif",
-                          marginBottom: "20px",
-                          marginLeft: "-200px",
+                          marginBottom: "30px",
+                          textAlign: "left",
+                          marginLeft: "100px",
                         }}
                       >
                         Doctor : {pres.doctor?.firstname}{" "}
@@ -137,7 +165,8 @@ export default function PharmacyDashboard() {
                           fontSize: "15px",
                           fontFamily: "Georgia, serif",
                           marginBottom: "30px",
-                          marginLeft: "-325px",
+                          textAlign: "left",
+                          marginLeft: "100px",
                         }}
                       >
                         Status : {pres.status?.status}
@@ -147,7 +176,7 @@ export default function PharmacyDashboard() {
                         {pres.status.status === "New" ? (
                           <Grid>
                             <Button
-                              onClick={() => handleButton(PaymentResponse._id)}
+                              onClick={() => handleButton(pres._id, "accept")}
                               variant="contained"
                               sx={{
                                 width: "200px",
@@ -182,14 +211,14 @@ export default function PharmacyDashboard() {
                                 boxShadow: "1px 2px 5px rgba(0,0,0,0.2)",
                                 marginTop: "20px",
                               }}
+                              onClick={() => handleButton(pres._id, "declined")}
                             >
                               Decline
                             </Button>
                           </Grid>
-                        ) : (
+                        ) : pres.status.status === "Declined" ? (
                           <Button
                             variant="contained"
-                            disabled
                             sx={{
                               backgroundColor: "#ccc",
                               color: "black",
@@ -201,8 +230,103 @@ export default function PharmacyDashboard() {
                               boxShadow: "none",
                               marginTop: "20px",
                             }}
+                            disabled
                           >
-                            Decline
+                            Order Declined
+                          </Button>
+                        ) : pres.status.status === "Preparing" ? (
+                          <Button
+                            variant="contained"
+                            sx={{
+                              width: "250px",
+                              height: "70px",
+                              backgroundColor: "white",
+                              color: "black",
+                              borderRadius: "30px",
+                              padding: "10px 40px",
+                              textTransform: "none",
+                              fontSize: "16px",
+                              fontWeight: "bold",
+                              boxShadow: "1px 2px 5px rgba(0,0,0,0.2)",
+                              marginTop: "20px",
+                            }}
+                            onClick={() => handleButton(pres._id, "ready")}
+                          >
+                            Ready To Delivery
+                          </Button>
+                        ) : pres.status.status === "Pending" ? (
+                          <Button
+                            variant="contained"
+                            sx={{
+                              backgroundColor: "#ccc",
+                              color: "black",
+                              borderRadius: "30px",
+                              padding: "10px 40px",
+                              textTransform: "none",
+                              fontSize: "16px",
+                              fontWeight: "bold",
+                              boxShadow: "none",
+                              marginTop: "20px",
+                            }}
+                            disabled
+                          >
+                            Wait for Shipper's Acceptance
+                          </Button>
+                        ) : pres.status.status === "Accepted" ? (
+                          <Button
+                            variant="contained"
+                            sx={{
+                              backgroundColor: "#ccc",
+                              color: "black",
+                              borderRadius: "30px",
+                              padding: "10px 40px",
+                              textTransform: "none",
+                              fontSize: "16px",
+                              fontWeight: "bold",
+                              boxShadow: "none",
+                              marginTop: "20px",
+                            }}
+                            onClick={() =>
+                              handleButton(pres._id, "delivered_shipper")
+                            }
+                          >
+                            Delivered To Shipper
+                          </Button>
+                        ) : pres.status.status === "Delivering" ? (
+                          <Button
+                            variant="contained"
+                            sx={{
+                              backgroundColor: "#ccc",
+                              color: "black",
+                              borderRadius: "30px",
+                              padding: "10px 40px",
+                              textTransform: "none",
+                              fontSize: "16px",
+                              fontWeight: "bold",
+                              boxShadow: "none",
+                              marginTop: "20px",
+                            }}
+                            disabled
+                          >
+                            Delivering
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="contained"
+                            sx={{
+                              backgroundColor: "#ccc",
+                              color: "black",
+                              borderRadius: "30px",
+                              padding: "10px 40px",
+                              textTransform: "none",
+                              fontSize: "16px",
+                              fontWeight: "bold",
+                              boxShadow: "none",
+                              marginTop: "20px",
+                            }}
+                            disabled
+                          >
+                            Completed
                           </Button>
                         )}
                       </Box>
