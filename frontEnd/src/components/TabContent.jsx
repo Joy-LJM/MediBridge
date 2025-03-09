@@ -61,6 +61,7 @@ export default function TabContent({ label, children }) {
         onChange={handleChange}
         aria-label="dashboard"
         sx={{
+          width: "15vw",
           borderRight: 1,
           borderColor: "divider",
           backgroundColor: "#689D6D",

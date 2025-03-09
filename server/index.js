@@ -240,6 +240,21 @@ app.get("/api/pharmacy/prescriptions/:id", async (request, response) => {
   response.json(pres); //send JSON object with appropriate JSON headers
 });
 
+//Update status of prescription
+app.put("/api/pharmacy/prescription/update/:id", async (req, res) => {
+  let preId = req.params.id;
+  let { deliveryStatus } = req.body;
+
+  const statusId = await getStatusId(deliveryStatus);
+  const result = await updateStatus(preId, statusId);
+
+  // Respond with appropriate status and message
+  res.status(result.status).json({
+    status: result.status === 200 ? "success" : "error",
+    message: result.message,
+  });
+});
+
 /**END PHARMACY SECTION */
 
 //Return list of orders
@@ -361,7 +376,6 @@ async function getPharmacyPrescriptions(id) {
       },
     },
     { $unwind: "$status" },
-    { $match: { "status.status": "New" } },
     {
       $project: {
         _id: 1,
@@ -393,12 +407,36 @@ async function account(userData) {
   // console.log(status);
 }
 
+//Async function to get status id through status name
+async function getStatusId(deliveryStatus) {
+  db = await connection();
+  const statusDoc = await db
+    .collection("deliveryStatus")
+    .findOne({ status: deliveryStatus });
+  return statusDoc._id;
+}
+
 // Async function to update status of prescription
-async function status(id) {
+async function updateStatus(id, statusId) {
   db = await connection();
   const preId = new ObjectId(id);
-  const result = db.collection("prescriptions").findOne({ _id: preId });
-  return result;
+  const result = await db
+    .collection("prescriptions")
+    .updateOne(
+      { _id: preId },
+      { $set: { deliveryStatus: statusId, updated_at: new Date() } }
+    );
+
+  if (result.modifiedCount === 0) {
+    return { status: 404, message: "Prescription not found" };
+  }
+
+  const updatedStatus = db.collection("prescriptions").findOne({ _id: preId });
+  return {
+    status: 200,
+    message: "A Status updated successfully",
+    schedule: updatedStatus,
+  };
 }
 
 /**END FUNCTION TO ADD DATA */
