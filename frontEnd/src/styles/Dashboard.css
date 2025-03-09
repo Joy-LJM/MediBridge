@@ -1,7 +1,7 @@
-*{
-  text-transform:none !important;
+* {
+  text-transform: none !important;
 }
-.upload{
+.upload {
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   height: 1;
@@ -12,17 +12,22 @@
   white-space: nowrap;
   width: 1;
 }
-textarea{
-  padding:8px;
+textarea {
+  padding: 8px;
   border-radius: 4px;
   border: 1px solid #ccc;
   width: 60%;
-  &:hover{
+  &:hover {
     border-color: var(--darkGreen);
   }
-  &:focus{
+  &:focus {
     outline: 0;
     border-color: var(--secondaryGreen);
     box-shadow: 0 0 3px var(--darkGreen);
   }
+}
+
+.prescript {
+  width: 150px;
+  height: 200px;
 }
