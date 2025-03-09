@@ -18,6 +18,7 @@ const port = process.env.PORT || "3000";
 
 const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/mediBridge`;
 console.log(dbUrl, "dbUrl");
+
 const client = new MongoClient(dbUrl);
 sgMail.setApiKey(process.env.API_KEY);
 
@@ -27,7 +28,7 @@ app.use(express.json()); //need this line to be able to receive/parse JSON from 
 //allow requests from all servers
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5175"],
     credentials: true,
   })
 );
@@ -167,6 +168,9 @@ app.post("/login", async (req, res) => {
     },
   });
 });
+
+
+
 // Return list of provinces
 app.get("/api/provinces", async (request, response) => {
   let provinces = await getProvinces();
@@ -184,6 +188,13 @@ app.get("/api/cities/:provinceId", async (request, response) => {
 app.get("/api/accounts", async (request, response) => {
   let accounts = await getAccounts();
   response.json(accounts); //send JSON object with appropriate JSON headers
+});
+
+//Return list of orders
+app.get("/api/orders", async (request, response) => {
+  let orders = await getOrders();
+  console.log(orders);
+  response.json(orders); //send JSON object with appropriate JSON headers
 });
 
 /** START OF PHARMACY SECTION */
@@ -211,6 +222,45 @@ async function getProvinces() {
   res = results.toArray();
   return res;
 }
+
+/* Async function to retrieve all orders*/
+async function getOrders() {
+  db = await connection();
+
+  var results = await db.collection("prescriptions").aggregate([
+      {
+          $lookup: {
+              from: "users",
+              localField: "patientId",
+              foreignField: "_id",
+              as: "patientDetails"
+          }
+      },
+      { $unwind: { path: "$patientDetails", preserveNullAndEmptyArrays: true } }, // ✅ Unwind to get single patient object
+      {
+          $lookup: {
+              from: "deliveryStatus",
+              localField: "deliveryStatus",
+              foreignField: "_id",
+              as: "statusDetails"
+          }
+      },
+      { $unwind: { path: "$statusDetails", preserveNullAndEmptyArrays: true } },
+      {
+          $project: {
+              _id: 1,
+              pharmacyLocation: 1,
+              customerLocation: "$patientDetails.address", // ✅ Extract only the address
+              remark: 1,
+              status: "$statusDetails.status" // ✅ Extract status
+          }
+      }
+  ]).toArray();
+
+  console.log("Orders with Patient Address:", results); // ✅ Debugging log
+  return results;
+}
+
 /* Async function to retrieve all cities from scenarios collection. */
 async function getCities(provinceId) {
   db = await connection(); //await result of connection() and store the returned db
