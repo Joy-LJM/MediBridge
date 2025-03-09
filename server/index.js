@@ -213,8 +213,6 @@ app.post("/login", async (req, res) => {
   });
 });
 
-
-
 // Return list of provinces
 app.get("/api/provinces", async (request, response) => {
   let provinces = await getProvinces();
@@ -233,6 +231,16 @@ app.get("/api/accounts", async (request, response) => {
   let accounts = await getAccounts();
   response.json(accounts); //send JSON object with appropriate JSON headers
 });
+
+/** START OF PHARMACY SECTION */
+// Return list of precriptions in pharmacy dashboard
+app.get("/api/pharmacy/prescriptions/:id", async (request, response) => {
+  let userId = request.params.id;
+  let pres = await getPharmacyPrescriptions(userId);
+  response.json(pres); //send JSON object with appropriate JSON headers
+});
+
+/**END PHARMACY SECTION */
 
 //Return list of orders
 app.get("/api/orders", async (request, response) => {
@@ -261,44 +269,51 @@ async function getProvinces() {
 async function getOrders() {
   db = await connection();
 
-  var results = await db.collection("prescriptions").aggregate([
-    {
-      $lookup: {
+  var results = await db
+    .collection("prescriptions")
+    .aggregate([
+      {
+        $lookup: {
           from: "users",
           localField: "pharmacyId",
           foreignField: "_id",
-          as: "pharmacyDetails"
-      }
-  },
-  { $unwind: { path: "$pharmacyDetails", preserveNullAndEmptyArrays: true } }, // Unwind to get single patient object
-      {
-          $lookup: {
-              from: "users",
-              localField: "patientId",
-              foreignField: "_id",
-              as: "patientDetails"
-          }
+          as: "pharmacyDetails",
+        },
       },
-      { $unwind: { path: "$patientDetails", preserveNullAndEmptyArrays: true } }, // ✅ Unwind to get single patient object
       {
-          $lookup: {
-              from: "deliveryStatus",
-              localField: "deliveryStatus",
-              foreignField: "_id",
-              as: "statusDetails"
-          }
+        $unwind: { path: "$pharmacyDetails", preserveNullAndEmptyArrays: true },
+      }, // Unwind to get single patient object
+      {
+        $lookup: {
+          from: "users",
+          localField: "patientId",
+          foreignField: "_id",
+          as: "patientDetails",
+        },
+      },
+      {
+        $unwind: { path: "$patientDetails", preserveNullAndEmptyArrays: true },
+      }, // ✅ Unwind to get single patient object
+      {
+        $lookup: {
+          from: "deliveryStatus",
+          localField: "deliveryStatus",
+          foreignField: "_id",
+          as: "statusDetails",
+        },
       },
       { $unwind: { path: "$statusDetails", preserveNullAndEmptyArrays: true } },
       {
-          $project: {
-              _id: 1,
-              pharmacyLocation: "$pharmacyDetails.address",
-              customerLocation: "$patientDetails.address", // ✅ Extract only the address
-              remark: 1,
-              status: "$statusDetails.status" // ✅ Extract status
-          }
-      }
-  ]).toArray();
+        $project: {
+          _id: 1,
+          pharmacyLocation: "$pharmacyDetails.address",
+          customerLocation: "$patientDetails.address", // ✅ Extract only the address
+          remark: 1,
+          status: "$statusDetails.status", // ✅ Extract status
+        },
+      },
+    ])
+    .toArray();
 
   console.log("Orders with Patient Address:", results); // ✅ Debugging log
   return results;
@@ -374,7 +389,7 @@ async function account(userData) {
   db = await connection(); //await result of connection() and store the returned db
 
   let status = await db.collection("users").insertOne(userData);
-  
+
   // console.log(status);
 }
 
