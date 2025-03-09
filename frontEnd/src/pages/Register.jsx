@@ -19,7 +19,7 @@ import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
-import { HOST_URL } from "../constant";
+// import { HOST_URL } from "../constant";
 
 export default function Register() {
   const [firstname, setFname] = React.useState();
@@ -34,13 +34,15 @@ export default function Register() {
   const [selectedProvince, setSelectedProvince] = React.useState("");
   const [account, setAccount] = React.useState([]);
   const [selectedAccount, setSelectedAccount] = React.useState("");
+  const [license, setLicense] = React.useState("");
+  const [licenseRequired, setLicenseRequired] = React.useState(false);
 
   const navigate = useNavigate();
 
   // Fetch provinces on component mount
   React.useEffect(() => {
     axios
-      .get(`${HOST_URL}/api/provinces`)
+      .get(`http://localhost:3000/api/provinces`)
       .then((response) => {
         setProvinces(response.data);
       })
@@ -51,7 +53,7 @@ export default function Register() {
   React.useEffect(() => {
     if (selectedProvince) {
       axios
-        .get(`${HOST_URL}/api/cities/${selectedProvince}`)
+        .get(`http://localhost:3000/api/cities/${selectedProvince}`)
         .then((response) => {
           setCities(response.data);
         })
@@ -68,16 +70,34 @@ export default function Register() {
       })
       .catch((error) => console.error("Error fetching accounts:", error));
   }, []);
+
   React.useEffect(() => {
     const userInfo = localStorage.getItem("userInfo");
     if (userInfo) {
       navigate("/dashboard");
     }
   }, [navigate]);
+
+  const handleAccountChange = (event) => {
+    const selectedAccountInfo = event.target.value;
+    setSelectedAccount(selectedAccountInfo);
+
+    // Set the license requirement based on selected account type
+    if (
+      selectedAccountInfo === "67b270820a93bde65f142af1" || //doctor id
+      selectedAccountInfo === "67b270940a93bde65f142af2" || // pharmacy id
+      selectedAccountInfo === "67b270b10a93bde65f142af4" //shipper id
+    ) {
+      setLicenseRequired(true); // Show license field
+    } else {
+      setLicenseRequired(false); // Hide license field
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .post(`${HOST_URL}/register`, {
+      .post(`http://localhost:3000/register`, {
         firstname,
         lastname,
         email,
@@ -87,6 +107,7 @@ export default function Register() {
         city: city,
         province: selectedProvince,
         account: selectedAccount,
+        license: licenseRequired ? license : "",
       })
       .then(() => {
         localStorage.setItem("isRegistered", "true");
@@ -303,7 +324,8 @@ export default function Register() {
                   aria-labelledby="demo-row-radio-buttons-group-label"
                   name="row-radio-buttons-group"
                   sx={{ py: 2, textAlign: "center" }}
-                  onChange={(e) => setSelectedAccount(e.target.value)}
+                  value={selectedAccount}
+                  onChange={handleAccountChange}
                 >
                   {account.map((acc) => (
                     <FormControlLabel
@@ -325,6 +347,30 @@ export default function Register() {
                   ))}
                 </RadioGroup>
               </FormControl>
+
+              {licenseRequired && (
+                <TextField
+                  id="license"
+                  label={
+                    selectedAccount === "67b270b10a93bde65f142af4"
+                      ? "Driver License Number"
+                      : "Professional License"
+                  }
+                  type="license"
+                  InputLabelProps={{ style: { color: "#fff" } }}
+                  sx={{
+                    marginBottom: "30px",
+                    "& .MuiInputBase-input": { color: "#fff" },
+                    "& .MuiOutlinedInput-root": {
+                      "& fieldset": { borderColor: "#fff" },
+                      "&:hover fieldset": { borderColor: "#689D6D" },
+                      "&.Mui-focused fieldset": { borderColor: "#fff" },
+                    },
+                  }}
+                  onChange={(e) => setLicense(e.target.value)}
+                  required
+                />
+              )}
               <Button
                 variant="outlined"
                 size="large"

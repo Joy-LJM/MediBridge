@@ -40,7 +40,7 @@ function a11yProps(index) {
   };
 }
 
-export default function TabContent({label,children}) {
+export default function TabContent({ label, children }) {
   const [value, setValue] = React.useState(0);
 
   const handleChange = (event, newValue) => {
@@ -48,7 +48,9 @@ export default function TabContent({label,children}) {
   };
 
   return (
-    <Box sx={{ flexGrow: 1, bgcolor: "#D1E3C4", display: "flex", height: '100vh',}}>
+    <Box
+      sx={{ flexGrow: 1, bgcolor: "#D1E3C4", display: "flex", height: "100vh" }}
+    >
       <Tabs
         orientation="vertical"
         value={value}
@@ -59,15 +61,22 @@ export default function TabContent({label,children}) {
         <Tab label={label} aria-selected {...a11yProps(0)} />
       </Tabs>
       <TabPanel value={value} index={0}>
-        <Card sx={{ width: '60vw' ,paddingTop:4,paddingBottom:2,textAlign:'center'}}>
-         {children}
+        <Card
+          sx={{
+            width: "60vw",
+            paddingTop: 4,
+            paddingBottom: 2,
+            textAlign: "center",
+          }}
+        >
+          {children}
         </Card>
       </TabPanel>
     </Box>
   );
 }
 
-TabContent.propTypes={
-  children:React.Children,
-  label:string
-}
+TabContent.propTypes = {
+  children: React.Children,
+  label: string,
+};
