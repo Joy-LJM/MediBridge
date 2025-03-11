@@ -11,3 +11,15 @@
 .box {
   margin: 30px auto;
 }
+.signup{
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  p{
+    margin-bottom: 5px;
+  }
+  a{
+    text-decoration: underline;
+  }
+}

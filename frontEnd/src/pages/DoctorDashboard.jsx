@@ -19,8 +19,10 @@ import PharmacySearch from "../components/PharmacySearch";
 import axios from "axios";
 import {
   ADD_PATIENT,
+  EMAIL_REGEX,
   GET_PATIENT_LIST,
   ORDER_STATUS_MAP,
+  PHONE_REGEX,
   SUBMIT_PRESCRIPTION,
   SUCCESS_CODE,
 } from "../constant";
@@ -33,22 +35,24 @@ const formErr = {
   addressErr: "",
   emailErr: "",
 };
+const patientInitials={
+  firstname: "",
+  lastname: "",
+  email: "",
+  address: "",
+  phone: "",
+  account: "67b270a10a93bde65f142af3",
+}
+const formInitials={
+  files: null,
+  selectedPharmacy: "",
+  remark: "",
+  patient: "",
+  address: "",
+}
 export default function DoctorDashboard() {
-  const [formData, setFormData] = useState({
-    files: null,
-    selectedPharmacy: "",
-    remark: "",
-    patient: "",
-    address: "",
-  });
-  const [patientData, setPatientData] = useState({
-    firstname: "",
-    lastname: "",
-    email: "",
-    address: "",
-    phone: "",
-    account: "3",
-  });
+  const [formData, setFormData] = useState(formInitials);
+  const [patientData, setPatientData] = useState(patientInitials);
   const [error, setError] = useState({
     filesErr: "",
     selectedPharmacyErr: "",
@@ -63,7 +67,6 @@ export default function DoctorDashboard() {
     
     if(!uploadedFile) return;
 
-
     setFormData((prev) => ({
       ...prev,
       files: uploadedFile, // Store the single file
@@ -75,14 +78,14 @@ export default function DoctorDashboard() {
       {files.name} {/* Display the single file name */}
     </div>
     }
-    // return null;
+    return null;
   }, [files]);
 
   const handleSubmit = useCallback(async () => {
     const { files, selectedPharmacy, patient, remark } = formData || {};
     let newErrors = { filesErr: "", selectedPharmacyErr: "", patientErr: "" };
 
-    if (files.length === 0) {
+    if (!files) {
       newErrors.filesErr = "Please upload prescription before submitting!";
     } else {
       newErrors.filesErr = "";
@@ -126,6 +129,8 @@ export default function DoctorDashboard() {
       const { code, message } = response || {};
       if (code === SUCCESS_CODE) {
         toast.success(message);
+        setFormData(formInitials);
+        setPharmacies([])
       } else {
         toast.error(message);
       }
@@ -168,6 +173,16 @@ export default function DoctorDashboard() {
     } else {
       newErrors.emailErr = "";
     }
+    if (!PHONE_REGEX.test(phone)) {
+      newErrors.phoneNumErr = "Incorrect phone number format!";
+    } else {
+      newErrors.phoneNumErr = "";
+    }
+    if (!EMAIL_REGEX.test(email)) {
+      newErrors.emailErr = "Incorrect email format!";
+    } else {
+      newErrors.emailErr = "";
+    }
 
     setPatientFormError(newErrors); // ✅ Set all errors in one state update
 
@@ -175,6 +190,7 @@ export default function DoctorDashboard() {
     if (flag) {
       const { data: response } = await axios.post(ADD_PATIENT, patientData);
       setOpen(false);
+      setPatientData(patientInitials);
       const { code, message } = response || {};
       if (code === SUCCESS_CODE) {
         toast.success(message);
@@ -232,6 +248,7 @@ export default function DoctorDashboard() {
   const handleClose = () => {
     setOpen(false);
     setPatientFormError(formErr);
+    setPatientData(patientInitials)
   };
 
   return (

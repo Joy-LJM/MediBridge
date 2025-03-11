@@ -213,6 +213,89 @@ app.post("/login", async (req, res) => {
   });
 });
 
+let validateCode = {};
+app.post("/validateEmail", async (req, res) => {
+  const { email } = req.body;
+  db = await connection();
+  const user = await db.collection("users").findOne({ email });
+
+  if (!user) {
+    return res.json({ code: 0, message: "Email is not found!" });
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000);
+  const emailData = {
+    to: email,
+    from: "hathaonhin@gmail.com",
+    subject: "Your Verification Code",
+    text: `Your verification code is: ${code}`,
+    html: `<p>Your verification code is: <strong>${code}</strong></p>`,
+  };
+  console.log(code, "code");
+
+  validateCode.code = code;
+  validateCode.email = email;
+  validateCode.expiresAt = Date.now() + verification_time;
+
+  const emailRes = await sgMail.send(emailData);
+  if (emailRes) {
+    res.json({
+      code: 1,
+      message: "Send code successfully",
+      userInfo: {
+        _id: user._id,
+      },
+    });
+  }
+});
+app.post("/validateCode", async (req, res) => {
+  const { email, code } = req.body;
+  db = await connection();
+  const user = await db.collection("users").findOne({ email });
+
+  if (!user) {
+    return res.json({ code: 0, message: "Email is not found!" });
+  }
+
+  if (Date.now() > validateCode.expiresAt) {
+    validateCode = {}; // Remove expired code
+    return res.json({
+      code: 0,
+      message: "Verification code has expired.",
+    });
+  }
+
+  if (parseInt(code) !== validateCode.code) {
+    return res.json({ code: 0, message: "Invalid verification code." });
+  }
+
+  res.json({
+    code: 1,
+    message: "Valid verification code",
+  });
+});
+app.post("/resetPsw", async (req, res) => {
+  try {
+    const { _id, password } = req.body;
+
+    db = await connection();
+    const hasPsw = await bcrypt.hash(password, 12);
+    const user = await db
+      .collection("users")
+      .updateOne({ _id: new ObjectId(_id) }, { $set: { password: hasPsw } });
+    if (user.modifiedCount === 0) {
+      return res.json({ code: 0, message: "Password reset failed!" });
+    }
+
+    res.json({
+      code: 1,
+      message: "Password reset successfully.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ code: 0, message: "Internal server error." });
+  }
+});
 // Return list of provinces
 app.get("/api/provinces", async (request, response) => {
   let provinces = await getProvinces();

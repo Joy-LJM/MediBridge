@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 // import Footer from "../components/Footer";
 
 import {
@@ -13,7 +13,7 @@ import {
   Button,
 } from "@mui/material";
 import "../styles/login.css";
-import { HOST_URL, SUCCESS_CODE } from "../constant";
+import {EMAIL_REGEX, LOGIN, SUCCESS_CODE } from "../constant";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -33,8 +33,12 @@ export default function Login() {
       toast.error("Please input your email or password before submit!");
       return;
     }
+    if(!EMAIL_REGEX.test(email)){
+      toast.error("Invalid Email format!");
+      return;
+    }
     axios
-      .post(`${HOST_URL}/login`, {
+      .post(LOGIN, {
         email,
         password,
       })
@@ -42,7 +46,10 @@ export default function Login() {
         const { data } = res;
         const { code, message, user } = data;
         if (code === SUCCESS_CODE) {
-          navigate("/dashboard");
+          setTimeout(() => {
+            navigate("/dashboard");
+          }, 1500);
+
           toast.success(message);
           localStorage.setItem("userInfo", JSON.stringify(user));
         }else{
@@ -77,7 +84,7 @@ export default function Login() {
                 <TextField
                   id="email"
                   label="Email"
-                  type="email"
+                  // type="email"
                   InputLabelProps={{ style: { color: "#fff" } }}
                   sx={{
                     marginBottom: "30px",
@@ -108,6 +115,10 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   // required
                 />
+                  <div className="signup">
+                  <Link to="/password_reset">Forgot password?</Link>
+                  <p>Need an account?<Link to="/register">Sign up</Link></p>
+                  </div>
                 <Button
                   variant="outlined"
                   size="large"
@@ -124,6 +135,7 @@ export default function Login() {
                 </Button>
               </FormControl>
             </form>
+          
           </Box>
         </Container>
         {/* <Footer /> */}
