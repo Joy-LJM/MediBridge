@@ -49,57 +49,9 @@ app.post("/register", async (request, response) => {
     city,
     province,
     account,
+    license,
   } = request.body;
-  // let created = new Date();
-  // let deleted = null;
-  // // create a random number for code
-  // let verificationCode = Math.floor(100000 + Math.random() * 900000);
-  // bcrypt.hash(pass, 12).then((hash) => {
-  //   let infor = {
-  //     firstname: firstname,
-  //     lastname: lastname,
-  //     email: email,
-  //     password: hash,
-  //     phone: phone,
-  //     address: address,
-  //     city: city,
-  //     province: province,
-  //     account: acc,
-  //     created_at: created,
-  //     deleted_at: deleted,
-  //     verificationCode
-  //   };
 
-  //   // Send email verification to user
-  //   const emailData = {
-  //     to: email,
-  //     from: "hathaonhin@gmail.com",
-  //     subject: "Email Verification Code",
-  //     text: "Thank you for your registration. This is your code verification:",
-  //   };
-
-  //   try {
-  //     sgMail.send(emailData);
-  //     // console.log("Email sent successfully");
-
-  //     // Respond with booking information and QR code image path
-  //     response.status(201).json({
-  //       status: "success",
-  //       message: result.message,
-  //       booking: result,
-  //       qrImagePath: `/qr_codes/${bookingId}.png`,
-  //     });
-  //   } catch (emailError) {
-  //     console.error("Error sending email:", emailError.message);
-  //     response.status(500).json({
-  //       status: "error",
-  //       message: "An error occurred while sending the email",
-  //     });
-  //   }
-
-  //   account(infor);
-  //   response.json("success");
-  // });
   if (verificationCodes[email]) {
     return res.json("Verification already pending. Enter the code.");
   }
@@ -117,6 +69,7 @@ app.post("/register", async (request, response) => {
       city,
       province,
       account,
+      license,
     },
     expiresAt: Date.now() + verification_time,
   };
@@ -319,6 +272,7 @@ app.get("/api/accounts", async (request, response) => {
 // Return list of precriptions in pharmacy dashboard
 app.get("/api/pharmacy/prescriptions/:id", async (request, response) => {
   let userId = request.params.id;
+  // console.log(userId);
   let pres = await getPharmacyPrescriptions(userId);
   response.json(pres); //send JSON object with appropriate JSON headers
 });
@@ -449,7 +403,7 @@ async function getPharmacyPrescriptions(id) {
         as: "doctor",
       },
     },
-    { $unwind: "$doctor" },
+    { $unwind: { path: "$doctor", preserveNullAndEmptyArrays: true } },
     {
       $lookup: {
         from: "deliveryStatus",
@@ -458,7 +412,7 @@ async function getPharmacyPrescriptions(id) {
         as: "status",
       },
     },
-    { $unwind: "$status" },
+    { $unwind: { path: "$status", preserveNullAndEmptyArrays: true } },
     {
       $project: {
         _id: 1,
