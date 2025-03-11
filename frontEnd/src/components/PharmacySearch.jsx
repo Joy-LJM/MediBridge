@@ -45,7 +45,7 @@ const PharmacySearch = ({
     )}&format=json`;
     const response = await axios.get(url);
     if (!response.data.length) {
-      toast.error("Address not found");
+      toast.error("No pharmacies found near your location");
       setLoading(false);
       return;
     }
@@ -103,8 +103,8 @@ const PharmacySearch = ({
           .map((addr) => ({
             address: addr.address,
             distance: haversineDistance(
-              originCoords.lat,
-              originCoords.lon,
+              originCoords.lat || '',
+              originCoords.lon ||'',
               addr.lat,
               addr.lon
             ),
@@ -122,7 +122,6 @@ const PharmacySearch = ({
       return null;
     }
   }, [address, setPharmacies]);
-console.log(pharmacies,'pharmacies');
 
   return (
     <>
@@ -136,7 +135,6 @@ console.log(pharmacies,'pharmacies');
           onChange={handleChangeAddress}
           sx={{ mb: 2 }}
         />
-
         <Button
           variant="contained"
           color="primary"
@@ -155,7 +153,7 @@ console.log(pharmacies,'pharmacies');
             sx={{ mt: 3 }}
             onChange={handleSelectPharmacy}
             value={selectedPharmacy}
-            disabled={loading}
+            disabled={loading || !address}
           >
             <MenuItem disabled>Select a Pharmacy</MenuItem>
             {pharmacies.map((pharmacy, index) => (

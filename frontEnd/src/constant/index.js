@@ -13,18 +13,34 @@ const ORDER_STATUS_MAP = {
 const SUCCESS_CODE = 1;
 
 const HOST_URL = "http://localhost:3000";
+const LOGIN = `${HOST_URL}/login`;
+const VALIDATE_EMAIL = `${HOST_URL}/validateEmail`;
+const VERIFY_CODE = `${HOST_URL}/validateCode`;
+const RESET_PSW = `${HOST_URL}/resetPsw`;
 const GET_PATIENT_LIST = `${HOST_URL}/prescription/patient`;
 const GET_PHARMACY_LIST = `${HOST_URL}/prescription/pharmacy`;
 const SUBMIT_PRESCRIPTION = `${HOST_URL}/prescription/submit`;
 const ADD_PATIENT = `${HOST_URL}/prescription/addPatient`;
 
+const POSTCODE_REGEX = /^[A-Z][0-9][A-Z]\s[0-9][A-Z][0-9]$/;
+const PHONE_REGEX = /^\(?(\d{3})\)?[-\s]?(\d{3})[-\s]?(\d{4})$/;
+
+const EMAIL_REGEX =
+  /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 export {
   HOST_URL,
+  LOGIN,
   ROLE_MAP,
+  VALIDATE_EMAIL,
   GET_PATIENT_LIST,
   SUCCESS_CODE,
   SUBMIT_PRESCRIPTION,
   ADD_PATIENT,
   GET_PHARMACY_LIST,
+  VERIFY_CODE,
   ORDER_STATUS_MAP,
+  RESET_PSW,
+  POSTCODE_REGEX,
+  PHONE_REGEX,
+  EMAIL_REGEX,
 };

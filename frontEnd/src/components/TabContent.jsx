@@ -81,7 +81,7 @@ export default function TabContent({ label, children }) {
           {...a11yProps(0)}
         />
       </Tabs>
-      <TabPanel value={value} index={0}>
+      <TabPanel value={value} index={0} className="tabContent">
         <Card
           sx={{
             width: "60vw",
