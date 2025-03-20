@@ -550,9 +550,9 @@ app.get("/prescription/patient", async (req, res, next) => {
             lastname,
             account,
             email,
-            address,
-            city: cityData ? cityData.name : null,
-            province: provinceData ? provinceData.name : null,
+            address: `${address}${cityData ? "," + cityData.name : ""}${
+              provinceData ? "," + provinceData.name : ""
+            }`,
           };
         }
       )

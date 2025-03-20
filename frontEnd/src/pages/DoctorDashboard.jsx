@@ -10,6 +10,9 @@ import {
   FormControl,
   FormHelperText,
   Grid2,
+  InputLabel,
+  MenuItem,
+  Select,
   TextField,
 } from "@mui/material";
 import { TextareaAutosize } from "@mui/base/TextareaAutosize";
@@ -20,6 +23,8 @@ import axios from "axios";
 import {
   ADD_PATIENT,
   EMAIL_REGEX,
+  FETCH_CITIES,
+  FETCH_PROVINCES,
   GET_PATIENT_LIST,
   ORDER_STATUS_MAP,
   PHONE_REGEX,
@@ -35,21 +40,23 @@ const formErr = {
   addressErr: "",
   emailErr: "",
 };
-const patientInitials={
+const patientInitials = {
   firstname: "",
   lastname: "",
   email: "",
   address: "",
   phone: "",
   account: "67b270a10a93bde65f142af3",
-}
-const formInitials={
+  city: "",
+  province: "",
+};
+const formInitials = {
   files: null,
   selectedPharmacy: "",
   remark: "",
   patient: "",
   address: "",
-}
+};
 export default function DoctorDashboard() {
   const [formData, setFormData] = useState(formInitials);
   const [patientData, setPatientData] = useState(patientInitials);
@@ -60,12 +67,15 @@ export default function DoctorDashboard() {
   });
   const [patientFormError, setPatientFormError] = useState(formErr);
   const [pharmacies, setPharmacies] = useState([]);
+  const [cityList, setCityList] = useState([]);
+  const [pronviceList, setProvinceList] = useState([]);
+
   const { files } = formData || {};
   const onFileUpload = (event) => {
-    const uploadedFile=event.target.files[0];
-    console.log(uploadedFile,'uploadedFile');
-    
-    if(!uploadedFile) return;
+    const uploadedFile = event.target.files[0];
+    console.log(uploadedFile, "uploadedFile");
+
+    if (!uploadedFile) return;
 
     setFormData((prev) => ({
       ...prev,
@@ -74,9 +84,11 @@ export default function DoctorDashboard() {
   };
   const FileNameText = useCallback(() => {
     if (files) {
-     return <div style={{ color: "#457447", marginTop: 5 }}>
-      {files.name} {/* Display the single file name */}
-    </div>
+      return (
+        <div style={{ color: "#457447", marginTop: 5 }}>
+          {files.name} {/* Display the single file name */}
+        </div>
+      );
     }
     return null;
   }, [files]);
@@ -130,7 +142,7 @@ export default function DoctorDashboard() {
       if (code === SUCCESS_CODE) {
         toast.success(message);
         setFormData(formInitials);
-        setPharmacies([])
+        setPharmacies([]);
       } else {
         toast.error(message);
       }
@@ -138,13 +150,16 @@ export default function DoctorDashboard() {
   }, [formData]);
 
   const handleAddPatient = useCallback(async () => {
-    const { firstname, lastname, phone, address, email } = patientData || {};
+    const { firstname, lastname, phone, address, email, province, city } =
+      patientData || {};
     let newErrors = {
       firstnameErr: "",
       lastnameErr: "",
       phoneNumErr: "",
       addressErr: "",
       emailErr: "",
+      provinceErr: "",
+      cityErr: "",
     };
 
     if (!lastname) {
@@ -167,6 +182,16 @@ export default function DoctorDashboard() {
       newErrors.addressErr = "Please input address!";
     } else {
       newErrors.addressErr = "";
+    }
+    if (!province) {
+      newErrors.provinceErr = "Please select province!";
+    } else {
+      newErrors.provinceErr = "";
+    }
+    if (!city) {
+      newErrors.cityErr = "Please select city!";
+    } else {
+      newErrors.cityErr = "";
     }
     if (!email) {
       newErrors.emailErr = "Please input email!";
@@ -248,8 +273,30 @@ export default function DoctorDashboard() {
   const handleClose = () => {
     setOpen(false);
     setPatientFormError(formErr);
-    setPatientData(patientInitials)
+    setPatientData(patientInitials);
   };
+
+  useEffect(() => {
+    if (open) {
+      axios
+        .get(FETCH_PROVINCES)
+        .then((response) => {
+          setProvinceList(response.data);
+        })
+        .catch((error) => console.error("Error fetching provinces:", error));
+    }
+  }, [open]);
+  const { province } = patientData;
+  useEffect(() => {
+    if (province) {
+      axios
+        .get(`${FETCH_CITIES}/${province}`)
+        .then((response) => {
+          setCityList(response.data);
+        })
+        .catch((error) => console.error("Error fetching cities:", error));
+    }
+  }, [province]);
 
   return (
     // <FormControl required>
@@ -517,6 +564,85 @@ export default function DoctorDashboard() {
                 >
                   {patientFormError.addressErr}
                 </FormHelperText>
+                <FormControl >
+                  <InputLabel
+                    id="province-label"
+                    // sx={{ "&.Mui-focused ": { color: "#fff" }, }}
+                  >
+                    Province
+                  </InputLabel>
+                  <Select
+                    labelId="province-label"
+                    id="province"
+                    label="Province"
+                    value={patientData.province}
+                    onChange={(e) =>
+                      setPatientData({
+                        ...patientData,
+                        province: e.target.value,
+                      })
+                    }
+                    sx={{
+                      marginBottom: "10px",
+                      "& .MuiOutlinedInput-root": {
+                        "&:hover fieldset": { borderColor: "#689D6D" },
+                      },
+                    }}
+                  >
+                    {pronviceList.map((province) => (
+                      <MenuItem key={province._id} value={province._id}>
+                        {province.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText
+                  className="textErr"
+                  error={!!patientFormError.provinceErr}
+                >
+                  {patientFormError.provinceErr}
+                </FormHelperText>
+                </FormControl>
+              
+                {/* Fixed Select Dropdown */}
+                <FormControl sx={{ marginBottom: "30px" }}>
+                  <InputLabel
+                    id="age-label"
+                    // sx={{ "&.Mui-focused ": { color: "#fff" }, color: "#fff" }}
+                  >
+                    City
+                  </InputLabel>
+                  <Select
+                    labelId="age-label"
+                    id="age"
+                    label="City"
+                    value={patientData.city}
+                    onChange={(e) =>
+                      setPatientData({
+                        ...patientData,
+                        city: e.target.value,
+                      })
+                    }
+                    sx={{
+                      marginBottom: "10px",
+                      "& .MuiOutlinedInput-root": {
+                        "&:hover fieldset": { borderColor: "#689D6D" },
+                      },
+                    }}
+                  >
+                    {cityList.map((city) => (
+                      <MenuItem key={city._id} value={city._id}>
+                        {city.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText
+                  className="textErr"
+                  error={!!patientFormError.cityErr}
+                >
+                  {patientFormError.cityErr}
+                </FormHelperText>
+                </FormControl>
+               
               </FormControl>
             </form>
           </Box>
