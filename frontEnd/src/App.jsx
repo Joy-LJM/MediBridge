@@ -11,6 +11,7 @@ import Navigation from "./components/Navigation";
 import { useEffect, useState } from "react";
 import Footer from "./components/Footer";
 import PswReset from "./pages/PswReset";
+import { ToastContainer } from "react-toastify";
 
 function App() {
   const [isLogin, setIsLogin] = useState(false);
@@ -71,6 +72,7 @@ function App() {
   })
   return (
     <>
+    <ToastContainer/>
       <Header isLogin={isLogin} handleLogout={handleLogout} />
       <Navigation isLogin={isLogin} />
       <Routes>

@@ -31,7 +31,7 @@ import {
   SUBMIT_PRESCRIPTION,
   SUCCESS_CODE,
 } from "../constant";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const formErr = {
   firstnameErr: "",
@@ -211,31 +211,43 @@ export default function DoctorDashboard() {
 
     setPatientFormError(newErrors); // ✅ Set all errors in one state update
 
-    const flag = Object.values(patientData).every((item) => item !== "");
-    if (flag) {
+    const withoutError = Object.values(newErrors).every((item) => item === "");
+    if (withoutError) {
       const { data: response } = await axios.post(ADD_PATIENT, patientData);
       setOpen(false);
       setPatientData(patientInitials);
       const { code, message } = response || {};
       if (code === SUCCESS_CODE) {
-        toast.success(message);
+        toast.success("Add patient successfully");
+
         axios.get(GET_PATIENT_LIST).then((res) => {
           const { data } = res || {};
           setPatientList(data.patientList);
           const curPatient = data.patientList.find(
             (item) => item.email === email
           );
+
+          const { name: cityName } = cityList.find((item) => item._id === city);
+          const { name: provinceName } = pronviceList.find(
+            (item) => item._id === province
+          );
+          if(error.patientErr){
+            setError({
+              ...error,
+              patientErr:""
+            })
+          }
           setFormData({
             ...formData,
             patient: curPatient,
-            address,
+            address: `${address}, ${cityName}, ${provinceName}`,
           });
         });
       } else {
         toast.error(message);
       }
     }
-  }, [formData, patientData]);
+  }, [cityList, formData, patientData, pronviceList]);
 
   const handleSelectPharmacy = useCallback(
     (e) => {
@@ -258,6 +270,7 @@ export default function DoctorDashboard() {
 
   const [patientList, setPatientList] = useState([]);
   useEffect(() => {
+    
     axios.get(GET_PATIENT_LIST).then((res) => {
       const { data } = res || {};
       setPatientList(data.patientList);
@@ -301,7 +314,6 @@ export default function DoctorDashboard() {
   return (
     // <FormControl required>
     <>
-      <ToastContainer />
       <TabContent label="Upload Prescription">
         <Grid2 container spacing={2} marginBottom={2}>
           <Grid2 size={4}>
@@ -351,7 +363,6 @@ export default function DoctorDashboard() {
                     }
                   }}
                   onChange={(e, option) => {
-                    console.log(option, "option");
                     setFormData({
                       ...formData,
                       patient: option,
@@ -360,14 +371,10 @@ export default function DoctorDashboard() {
                   }}
                   renderOption={(props, option) => {
                     // eslint-disable-next-line react/prop-types
-                    const { key, ...optionProps } = props;
+                    const { id, ...optionProps } = props;
+
                     return (
-                      <Box
-                        key={key}
-                        component="li"
-                        // sx={{ "& > img": { mr: 2, flexShrink: 0 } }}
-                        {...optionProps}
-                      >
+                      <Box component="li" {...optionProps} key={id}>
                         {`${option.firstname} ${option.lastname}`}
                       </Box>
                     );
@@ -462,7 +469,6 @@ export default function DoctorDashboard() {
                 />
                 <FormHelperText
                   className="textErr"
-                  marginBottom={5}
                   error={!!patientFormError.firstnameErr}
                 >
                   {patientFormError.firstnameErr}
@@ -518,7 +524,7 @@ export default function DoctorDashboard() {
                 </FormHelperText>
                 <TextField
                   id="phone"
-                  label="Phone"
+                  label="Phone(format:1234567890)"
                   type="tel"
                   value={patientData.phone}
                   sx={{
@@ -564,7 +570,7 @@ export default function DoctorDashboard() {
                 >
                   {patientFormError.addressErr}
                 </FormHelperText>
-                <FormControl >
+                <FormControl>
                   <InputLabel
                     id="province-label"
                     // sx={{ "&.Mui-focused ": { color: "#fff" }, }}
@@ -596,13 +602,13 @@ export default function DoctorDashboard() {
                     ))}
                   </Select>
                   <FormHelperText
-                  className="textErr"
-                  error={!!patientFormError.provinceErr}
-                >
-                  {patientFormError.provinceErr}
-                </FormHelperText>
+                    className="textErr"
+                    error={!!patientFormError.provinceErr}
+                  >
+                    {patientFormError.provinceErr}
+                  </FormHelperText>
                 </FormControl>
-              
+
                 {/* Fixed Select Dropdown */}
                 <FormControl sx={{ marginBottom: "30px" }}>
                   <InputLabel
@@ -616,12 +622,14 @@ export default function DoctorDashboard() {
                     id="age"
                     label="City"
                     value={patientData.city}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      console.log(e, "eeeee");
+
                       setPatientData({
                         ...patientData,
                         city: e.target.value,
-                      })
-                    }
+                      });
+                    }}
                     sx={{
                       marginBottom: "10px",
                       "& .MuiOutlinedInput-root": {
@@ -636,13 +644,12 @@ export default function DoctorDashboard() {
                     ))}
                   </Select>
                   <FormHelperText
-                  className="textErr"
-                  error={!!patientFormError.cityErr}
-                >
-                  {patientFormError.cityErr}
-                </FormHelperText>
+                    className="textErr"
+                    error={!!patientFormError.cityErr}
+                  >
+                    {patientFormError.cityErr}
+                  </FormHelperText>
                 </FormControl>
-               
               </FormControl>
             </form>
           </Box>

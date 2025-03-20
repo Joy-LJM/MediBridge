@@ -9,7 +9,7 @@ import {
   Box,
 } from "@mui/material";
 import PropTypes from "prop-types";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { GET_PHARMACY_LIST, HOST_URL } from "../constant";
 
 const PharmacySearch = ({
@@ -125,7 +125,6 @@ const PharmacySearch = ({
 
   return (
     <>
-      <ToastContainer />
       <Box sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
         <TextField
           fullWidth
@@ -146,7 +145,7 @@ const PharmacySearch = ({
         </Button>
 
         {/* Show Select Dropdown Only If Pharmacies Are Found */}
-        {pharmacies.length > 0 ? (
+        {pharmacies.length > 0 && (
           <Select
             fullWidth
             displayEmpty
@@ -162,11 +161,7 @@ const PharmacySearch = ({
               </MenuItem>
             ))}
           </Select>
-        ) : isClickSearch ? (
-          <Box sx={{ color: "red", mt: 2 }}>No pharmacies found near your location.</Box>
-        ) : (
-          ""
-        )}
+        ) }
       </Box>
     </>
   );

@@ -25,7 +25,7 @@ const FETCH_PROVINCES = `${HOST_URL}/api/provinces`;
 const FETCH_CITIES = `${HOST_URL}/api/cities`;
 
 const POSTCODE_REGEX = /^[A-Z][0-9][A-Z]\s[0-9][A-Z][0-9]$/;
-const PHONE_REGEX = /^\(?(\d{3})\)?[-\s]?(\d{3})[-\s]?(\d{4})$/;
+const PHONE_REGEX = /^\(?(\d{3})\)?(\d{3})(\d{4})$/;
 
 const EMAIL_REGEX =
   /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
