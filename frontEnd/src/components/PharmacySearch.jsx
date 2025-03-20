@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import {
   TextField,
@@ -22,7 +22,18 @@ const PharmacySearch = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [isClickSearch, setIsClickSearch] = useState(false);
-
+  const [isChangeAddr, setIsChangeAddr] = useState(false);
+  const oldAddr = useRef(address);
+  const oldAddrVal = oldAddr.current;
+  useEffect(() => {
+    if (oldAddrVal !== address) {
+      setIsChangeAddr(true);
+      setIsClickSearch(false);
+      setPharmacies([]);
+      handleSelectPharmacy("")
+    }
+    oldAddr.current = address;
+  }, [address, setPharmacies, oldAddrVal, handleSelectPharmacy]);
   // Haversine Formula: Calculate distance between two lat/lng points
   function haversineDistance(lat1, lon1, lat2, lon2) {
     const toRad = (x) => (x * Math.PI) / 180;
@@ -61,7 +72,7 @@ const PharmacySearch = ({
       toast.error("Please input address!");
       return;
     }
-
+    setIsClickSearch(true);
     setLoading(true);
     const res = await axios.get(GET_PHARMACY_LIST);
     try {
@@ -86,7 +97,7 @@ const PharmacySearch = ({
                 provinceRes.status === 200
                   ? provinceRes.data.provinceName.name
                   : "";
-              console.log(cityName, provinceName, "city");
+
               const joinAddr = `${address} ${cityName} ${provinceName}`;
               console.log(joinAddr, "joinAddr");
               return getCoordinates(joinAddr, rest);
@@ -103,8 +114,8 @@ const PharmacySearch = ({
           .map((addr) => ({
             address: addr.address,
             distance: haversineDistance(
-              originCoords.lat || '',
-              originCoords.lon ||'',
+              originCoords.lat || "",
+              originCoords.lon || "",
               addr.lat,
               addr.lon
             ),
@@ -113,7 +124,6 @@ const PharmacySearch = ({
           .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
 
         setPharmacies(sortedPharmacy);
-        setIsClickSearch(true);
       } else {
         toast.error("Fetch pharmacy data failed!");
       }
@@ -144,24 +154,26 @@ const PharmacySearch = ({
           {loading ? <CircularProgress size={20} /> : "Search"}
         </Button>
 
-        {/* Show Select Dropdown Only If Pharmacies Are Found */}
-        {pharmacies.length > 0 && (
-          <Select
-            fullWidth
-            displayEmpty
-            sx={{ mt: 3 }}
-            onChange={handleSelectPharmacy}
-            value={selectedPharmacy}
-            disabled={loading || !address}
-          >
-            <MenuItem disabled>Select a Pharmacy</MenuItem>
-            {pharmacies.map((pharmacy, index) => (
-              <MenuItem key={index} value={pharmacy._id}>
-                {`${pharmacy.firstname} - ${pharmacy.distance}`}
-              </MenuItem>
-            ))}
-          </Select>
-        ) }
+        {/* Show Select Dropdown Only If Pharmacies Are Found and research after address change */}
+        {isChangeAddr && !isClickSearch
+          ?null: pharmacies.length > 0 && (
+              <Select
+                fullWidth
+                displayEmpty
+                sx={{ mt: 3 }}
+                onChange={handleSelectPharmacy}
+                value={selectedPharmacy}
+                disabled={loading || !address}
+              >
+                <MenuItem disabled>Select a Pharmacy</MenuItem>
+                {pharmacies.map((pharmacy, index) => (
+                  <MenuItem key={index} value={pharmacy._id}>
+                    {`${pharmacy.firstname} - ${pharmacy.distance}`}
+                  </MenuItem>
+                ))}
+              </Select>
+            )
+          }
       </Box>
     </>
   );

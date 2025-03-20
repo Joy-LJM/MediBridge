@@ -553,6 +553,8 @@ app.get("/prescription/patient", async (req, res, next) => {
             address: `${address}${cityData ? "," + cityData.name : ""}${
               provinceData ? "," + provinceData.name : ""
             }`,
+            // city: cityData ? cityData.name : null,
+            // province: provinceData ? provinceData.name : null,
           };
         }
       )
@@ -599,7 +601,7 @@ app.get("/prescription/pharmacy", async (req, res, next) => {
         return res;
       }
     );
-    console.log(pharmacyRes, "pharmacyRes");
+
     res.json({
       pharmacyList: pharmacyRes,
     });
@@ -611,7 +613,7 @@ app.get("/prescription/city/:city", async (req, res, next) => {
   try {
     db = await connection();
     const { city } = req.params;
-    console.log(city, "sssss");
+
     const cityName = await db
       .collection("cities")
       .findOne({ _id: new ObjectId(city) });

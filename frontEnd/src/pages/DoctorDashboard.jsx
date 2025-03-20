@@ -247,13 +247,13 @@ export default function DoctorDashboard() {
         toast.error(message);
       }
     }
-  }, [cityList, formData, patientData, pronviceList]);
+  }, [cityList, error, formData, patientData, pronviceList]);
 
   const handleSelectPharmacy = useCallback(
     (e) => {
       setFormData({
         ...formData,
-        selectedPharmacy: e.target.value,
+        selectedPharmacy: e?.target?.value??"",
       });
     },
     [formData]
