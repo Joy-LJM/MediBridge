@@ -23,6 +23,8 @@ const SUBMIT_PRESCRIPTION = `${HOST_URL}/prescription/submit`;
 const ADD_PATIENT = `${HOST_URL}/prescription/addPatient`;
 const FETCH_PROVINCES = `${HOST_URL}/api/provinces`;
 const FETCH_CITIES = `${HOST_URL}/api/cities`;
+const PATIENT_ORDERS = `${HOST_URL}/patient/orders`;
+const ADD_REVIEWS = `${HOST_URL}/patient/addReview`;
 
 const POSTCODE_REGEX = /^[A-Z][0-9][A-Z]\s[0-9][A-Z][0-9]$/;
 const PHONE_REGEX = /^\(?(\d{3})\)?(\d{3})(\d{4})$/;
@@ -47,4 +49,6 @@ export {
   EMAIL_REGEX,
   FETCH_PROVINCES,
   FETCH_CITIES,
+  PATIENT_ORDERS,
+  ADD_REVIEWS,
 };

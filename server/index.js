@@ -487,9 +487,6 @@ app.post(
     try {
       const { patient_id, doctor_id, pharmacy_id, ...data } = req.body;
       const file = req.file;
-      console.log(req.body, "req.body");
-
-      console.log("Received File:", file);
 
       if (!file) {
         return res.status(400).json({ code: 0, message: "File is required!" });
@@ -645,9 +642,10 @@ app.post("/prescription/addPatient", async (req, res, next) => {
   try {
     const data = req.body || {};
     const { email } = data;
+    const hasPsw = await bcrypt.hash(userData.password, 12);
     db = await connection();
     db.collection("users")
-      .insertOne(data)
+      .insertOne({ ...data, password: hasPsw })
       .then(async () => {
         // send email to user
         // Send verification email
@@ -666,6 +664,76 @@ app.post("/prescription/addPatient", async (req, res, next) => {
         });
       });
   } catch (err) {
+    next(err);
+  }
+});
+app.get("/patient/orders", async (req, res, next) => {
+  try {
+    const { userId } = req.query;
+    console.log(userId, "userId");
+
+    db = await connection();
+    var results = await db
+      .collection("prescriptions")
+      .aggregate([
+        {
+          $match: { patient_id: new ObjectId(userId) },
+        },
+        {
+          $lookup: {
+            from: "deliveryStatus",
+            let: { delivery_status: "$delivery_status" }, //defining a variable called delivery_status and assigning it the value of the delivery_status field from the prescriptions collection
+            pipeline: [
+              //define a series of aggregation stages that will be executed in order
+              {
+                $match: {
+                  $expr: {
+                    //$expr evaluate an expression that checks if the _id field of the current document in the deliveryStatus collection is equal to the delivery_status variable we defined earlier.
+                    $eq: ["$_id", { $toObjectId: "$$delivery_status" }], //converts the delivery_status variable to an ObjectId.
+                  },
+                },
+              },
+              {
+                $project: {
+                  //transform documents by adding or removing fields.
+                  _id: 0, //removing the _id field
+                  status: 1, //keep status field
+                },
+              },
+            ],
+            as: "delivery_status_value",
+          },
+        },
+        {
+          $addFields: {
+            delivery_status_value: {
+              $arrayElemAt: ["$delivery_status_value.status", 0], //extract the first element of the status array and assign to the new field delivery_status_value
+            },
+          },
+        },
+      ])
+      .toArray();
+    console.log(results, "results");
+    return res.json(results);
+  } catch (err) {
+    next(err);
+  }
+});
+app.post("/patient/addReview", async (req, res, next) => {
+  try {
+    const data = req.body;
+
+    const db = await connection();
+    db.collection("review")
+      .insertOne({ ...data, user_id: new ObjectId(data.user_id) })
+      .then(() => {
+        res.json({
+          code: 1,
+          message: "Comment is submitted successfully!",
+        });
+      });
+  } catch (err) {
+    console.log(err);
     next(err);
   }
 });
