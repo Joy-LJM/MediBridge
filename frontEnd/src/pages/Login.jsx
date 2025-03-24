@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
 // import Footer from "../components/Footer";
 
@@ -63,7 +63,6 @@ export default function Login() {
 
   return (
     <>
-      <ToastContainer />
       <div className="container">
         <Container
           className="signIn"

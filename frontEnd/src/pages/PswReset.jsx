@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -116,7 +116,6 @@ const userId=useRef("")
 
   return (
     <>
-      <ToastContainer />
       <div className="container">
         <Container
           className="signIn"

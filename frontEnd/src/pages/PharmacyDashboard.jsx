@@ -15,7 +15,7 @@ import "../styles/Dashboard.css";
 import "../styles/Pharmacy.css";
 import TabContent from "../components/TabContent";
 import axios from "axios";
-import { ToastContainer } from "react-toastify";
+
 export default function PharmacyDashboard() {
   const [prescriptions, setPrescriptions] = useState([]);
   const [openModal, setOpenModal] = useState(false);
@@ -89,7 +89,6 @@ export default function PharmacyDashboard() {
 
   return (
     <>
-      <ToastContainer />
       <TabContent label="Orders" sx={{ color: "white" }}>
         <Box sx={{ display: "flex" }}>
           <Container maxWidth="md" sx={{ marginTop: "30px" }}>
