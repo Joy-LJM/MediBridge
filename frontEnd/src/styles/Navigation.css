@@ -1,4 +1,6 @@
-
+#nav{
+  padding-top: 100px;
+}
 #nav ul {
   display: flex;
   flex-direction: row;

@@ -315,7 +315,7 @@ export default function DoctorDashboard() {
     // <FormControl required>
     <>
       <TabContent label="Upload Prescription">
-        <Grid2 container spacing={2} marginBottom={2}>
+        <Grid2 container spacing={2} >
           <Grid2 size={4}>
             <label>Upload Prescription:</label>
           </Grid2>

@@ -4,7 +4,6 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
 dotenv.config();
 
 const cors = require("cors"); //need this to set this API to allow requests from other servers
@@ -480,6 +479,7 @@ async function updateStatus(id, statusId) {
 
 // dashboard routes
 
+const upload = multer({ dest: "uploads/" });
 app.post(
   "/prescription/submit",
   upload.single("prescription_file"),
@@ -550,8 +550,6 @@ app.get("/prescription/patient", async (req, res, next) => {
             address: `${address}${cityData ? "," + cityData.name : ""}${
               provinceData ? "," + provinceData.name : ""
             }`,
-            // city: cityData ? cityData.name : null,
-            // province: provinceData ? provinceData.name : null,
           };
         }
       )
@@ -711,6 +709,13 @@ app.get("/patient/orders", async (req, res, next) => {
             },
           },
         },
+
+        {
+          $sort: {
+            //sorts the results by the uploaded_date field in descending order
+            uploaded_date: -1,
+          },
+        },
       ])
       .toArray();
     console.log(results, "results");
@@ -731,6 +736,40 @@ app.post("/patient/addReview", async (req, res, next) => {
           code: 1,
           message: "Comment is submitted successfully!",
         });
+      });
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+const uploadDir = path.join(__dirname, "uploads");
+
+app.get("/prescription/:id/download", async (req, res, next) => {
+  try {
+    console.log(2222);
+
+    const id = req.params.id;
+    console.log(id, "lllll");
+    const db = await connection();
+
+    db.collection("prescriptions")
+      .findOne({ _id: new ObjectId(id) })
+      .then((prescription) => {
+        console.log(prescription, "prescription");
+
+        if (!prescription) {
+          return res.status(404).send({ message: "Prescription not found" });
+        }
+        const filePath = path.join(
+          uploadDir,
+          prescription.prescription_file.filename
+        );
+        res.download(filePath, prescription.prescription_file.originalname);
+        console.log(prescription, "result");
+      })
+      .catch((err) => {
+        console.log(err);
+        next(err);
       });
   } catch (err) {
     console.log(err);
