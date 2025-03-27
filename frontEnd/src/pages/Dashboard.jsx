@@ -6,11 +6,20 @@ import { ROLE_MAP } from "../constant";
 import PatientDashboard from "./PatientDashboard";
 import ShipperDashboard from "./ShipperDashboard";
 import PharmacyDashboard from "./PharmacyDashboard";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
   const userInfo = localStorage.getItem("userInfo");
   const { account } = JSON.parse(userInfo) || {};
-
+  useEffect(()=>{
+    if(!userInfo){
+      navigate('/')
+    }
+  },[navigate, userInfo])
+  
   return (
     <Box
       sx={{ display: "flex", flexDirection: "column", height: "fit-content" }}

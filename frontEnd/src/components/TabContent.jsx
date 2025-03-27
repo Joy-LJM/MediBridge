@@ -65,6 +65,7 @@ export default function TabContent({ label, children }) {
           borderRight: 1,
           borderColor: "divider",
           backgroundColor: "#689D6D",
+          minHeight:"800px",
           color: "white",
           "& .MuiTab-root": { color: "white !important" }, // Sets default text color to white
           "& .Mui-selected": {

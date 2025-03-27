@@ -17,12 +17,20 @@ import {
   Dialog,
   FormLabel,
   Rating,
+  Grid2,
 } from "@mui/material";
 import axios from "axios";
 import { toast } from "react-toastify";
 import PropTypes from "prop-types";
-import { ADD_REVIEWS, PATIENT_ORDERS, SUCCESS_CODE } from "../constant";
+import moment from "moment";
+import {
+  ADD_REVIEWS,
+  HOST_URL,
+  PATIENT_ORDERS,
+  SUCCESS_CODE,
+} from "../constant";
 import TabContent from "../components/TabContent";
+import { createURLDownloadFile } from "../utils";
 const deliveryStatusMap = {
   new: "New",
   preparing: "Preparing",
@@ -41,9 +49,12 @@ const steps = [
   { [deliveryStatusMap.delivering]: "Delivering" },
   { [deliveryStatusMap.completed]: "Completed" },
 ];
+const initialCommentVal = {
+  ratingVal: null,
+  comment: "",
+};
 const PatientDashboard = () => {
   const [orders, setOrders] = useState([]);
-  // const [orderStatusList, setOrderStatusList] = useState([]);
 
   useEffect(() => {
     fetchOrders();
@@ -55,7 +66,6 @@ const PatientDashboard = () => {
       const { data } = await axios.get(PATIENT_ORDERS, {
         params: { userId: id },
       });
-      console.log("Fetched Orders:", data);
       setOrders(data);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -64,10 +74,7 @@ const PatientDashboard = () => {
 
   const [open, setOpen] = useState(false);
 
-  const [commentData, setCommentData] = useState({
-    ratingVal: null,
-    comment: "",
-  });
+  const [commentData, setCommentData] = useState(initialCommentVal);
   const addComment = useCallback(() => {
     console.log(commentData);
     if (!commentData.ratingVal || !commentData.comment) {
@@ -83,80 +90,111 @@ const PatientDashboard = () => {
         if (data.code === SUCCESS_CODE) {
           toast.success(data.message);
           setOpen(false);
+          setCommentData(initialCommentVal);
         }
       })
       .catch((err) => {
         console.log(err, "eee");
       });
   }, [commentData]);
+
+  const downloadPres = useCallback(async (id) => {
+    const res = await axios.get(`${HOST_URL}/prescription/${id}/download`, {
+      responseType: "blob",
+    });
+    createURLDownloadFile(res.data,id)
+  }, []);
+
   return (
     <>
-      <TabContent label="Upload Prescription">
+      <TabContent label="My Orders">
         <Grid container spacing={4} justifyContent="center">
-          {orders.map((order) => (
-            <Grid item xs={12} sm={12} key={order._id}>
-              <Card
-                sx={{
-                  backgroundColor: "#EAF4E1",
-                  borderRadius: "15px",
-                  boxShadow: "2px 4px 8px rgba(0,0,0,0.1)",
-                  padding: "15px",
-                  textAlign: "center",
-                  maxWidth: "650px",
-                  margin: "auto",
-                  border: "1px solid rgba(0, 0, 0, 0.1)",
-                  position: "relative",
-                  height: 400,
-                  overflowY: "auto",
-                }}
-              >
-                <CardContent>
-                  <Typography
-                    variant="h6"
+          {orders.length > 0
+            ? orders.map((order) => (
+                <Grid item fontSize="1rem" key={order._id}>
+                  <Card
                     sx={{
-                      fontWeight: "bold",
-                      fontSize: "20px",
-                      marginBottom: "40px",
-                      textTransform: "uppercase",
-                      fontFamily: "Georgia, serif",
+                      backgroundColor: "#EAF4E1",
+                      borderRadius: "15px",
+                      boxShadow: "2px 4px 8px rgba(0,0,0,0.1)",
+                      padding: "15px",
+                      textAlign: "center",
+                      maxWidth: "650px",
+                      margin: "auto",
+                      border: "1px solid rgba(0, 0, 0, 0.1)",
+                      position: "relative",
+                      height: 400,
+                      overflowY: "auto",
                     }}
                   >
-                    Order: {order._id}
-                    <Button
-                      variant="contained"
-                      style={{
-                        position: "absolute",
-                        right: "10px",
-                        top: "30px",
-                      }}
-                    >
-                      Download
-                    </Button>
-                  </Typography>
-                  <OrderStepper status={order.delivery_status_value} />
-                  {order.delivery_status_value === "Completed" && (
-                    <Button
-                      variant="contained"
-                      sx={{
-                        borderRadius: "30px",
-                        padding: "10px 40px",
-                        fontSize: "16px",
-                        marginTop: "20px",
-                      }}
-                      onClick={()=> setOpen(true)}
-                    >
-                      Comment
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
+                    <CardContent>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: "bold",
+                          marginBottom: "40px",
+                          textTransform: "uppercase",
+                          fontFamily: "Georgia, serif",
+                        }}
+                      >
+                        Order: {order._id}
+                      </Typography>
+                      {order.delivery_status_value === "Completed" && (
+                        <Button
+                          variant="contained"
+                          sx={{
+                            borderRadius: "30px",
+                            fontSize: "16px",
+                            marginBottom: "20px",
+                          }}
+                          onClick={() => setOpen(true)}
+                        >
+                          Add Comment
+                        </Button>
+                      )}
+                      <Grid2 size={{ xs: 12, sm: 6 }} container spacing={2}>
+                        <Grid2 size={4}>Prescription:</Grid2>
+                        <Grid2 size={8}>
+                          <Button
+                            variant="outlined"
+                            onClick={() => downloadPres(order._id)}
+                          >
+                            Download
+                          </Button>
+                        </Grid2>
+                        <Grid2 size={4}>Uploaded Date:</Grid2>
+                        <Grid2 size={8}>
+                          {moment(order.uploaded_date).format(
+                            "MMMM Do YYYY, h:mm:ss a"
+                          )}
+                        </Grid2>
+                       {
+                        order.remark && <>
+                         <Grid2 size={4}>Remark:</Grid2>
+                        <Grid2 size={8}>
+                          {order.remark}
+                        </Grid2>
+                        </>
+                       }
+                        <Grid2 size={5}>Status:</Grid2>
+                        <Grid2 size={7}>
+                          <OrderStepper status={order.delivery_status_value} />
+                        </Grid2>
+                      </Grid2>
+                      
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))
+            : "No order"}
         </Grid>
       </TabContent>
       <Dialog
         open={open}
-        onClose={()=> setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          setCommentData(initialCommentVal);
+        }}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
         fullWidth={true}
@@ -164,9 +202,6 @@ const PatientDashboard = () => {
         <DialogTitle id="alert-dialog-title">Add Comment</DialogTitle>
         <DialogContent>
           <Box className="box">
-            <form
-            // onSubmit={handleSubmit}
-            >
               <FormControl sx={{ m: 1, width: 300 }}>
                 <FormLabel>How do you think of our app?</FormLabel>
                 <TextareaAutosize
@@ -190,7 +225,6 @@ const PatientDashboard = () => {
                   }}
                 />
               </FormControl>
-            </form>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -202,11 +236,11 @@ const PatientDashboard = () => {
     </>
   );
 };
+
 const OrderStepper = ({ status }) => {
   const [activeStep, setActiveStep] = useState(0);
   useEffect(() => {
     const idx = steps.findIndex((step) => step[status]);
-    console.log(idx, "dddd");
 
     setActiveStep(idx);
   }, [status]);
@@ -223,7 +257,7 @@ const OrderStepper = ({ status }) => {
     </Stepper>
   );
 };
-OrderStepper.propTypes={
-  status:PropTypes.string
-}
+OrderStepper.propTypes = {
+  status: PropTypes.string,
+};
 export default PatientDashboard;

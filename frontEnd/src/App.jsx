@@ -67,9 +67,8 @@ function App() {
       element: <Navigate to="/" replace />,
     },
   ];
-  useEffect(()=>{
 
-  })
+
   return (
     <>
     <ToastContainer/>
