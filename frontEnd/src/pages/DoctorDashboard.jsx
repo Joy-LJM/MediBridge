@@ -346,7 +346,7 @@ export default function DoctorDashboard() {
           <Grid2 size={4}>
             <label>Patient List:</label>
           </Grid2>
-          <Grid2 size={7} style={{ display: "flex", alignItems: "center" }}>
+          <Grid2 size={8} style={{ display: "flex", alignItems: "center" }}>
             <Grid2 size={9}>
               <Box
                 sx={{ p: 4, maxWidth: 400, mx: "auto", textAlign: "center" }}
@@ -433,9 +433,11 @@ export default function DoctorDashboard() {
             />
           </Grid2>
         </Grid2>
-        <Button color="success" variant="contained" onClick={handleSubmit}>
+       <Grid2 size={12} marginTop={4}>
+       <Button color="success" variant="contained" onClick={handleSubmit}>
           Submit
         </Button>
+       </Grid2>
       </TabContent>
       <Dialog
         open={open}
