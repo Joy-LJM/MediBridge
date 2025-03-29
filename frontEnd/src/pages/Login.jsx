@@ -92,7 +92,6 @@ export default function Login() {
                 <TextField
                   id="email"
                   label="Email"
-                  // type="email"
                   InputLabelProps={{ style: { color: "#fff" } }}
                   sx={{
                     marginBottom: "30px",
@@ -104,7 +103,6 @@ export default function Login() {
                     },
                   }}
                   onChange={(e) => setEmail(e.target.value)}
-                  // required
                 />
                 <TextField
                   id="password"
@@ -121,7 +119,6 @@ export default function Login() {
                     },
                   }}
                   onChange={(e) => setPassword(e.target.value)}
-                  // required
                 />
                   <div className="signup">
                   <Link to="/password_reset">Forgot password?</Link>
@@ -145,7 +142,6 @@ export default function Login() {
             </form>
           </Box>
         </Container>
-        {/* <Footer /> */}
       </div>
     </>
   );
