@@ -28,6 +28,8 @@ export default function Register() {
   const [password, setPassword] = React.useState();
   const [phone, setNumber] = React.useState();
   const [address, setAddress] = React.useState();
+  const [postCode, setPostCode] = React.useState();
+  const [postErr, setPostErr] = React.useState();
   const [cities, setCities] = React.useState([]);
   const [city, setCity] = React.useState("");
   const [provinces, setProvinces] = React.useState([]);
@@ -94,6 +96,19 @@ export default function Register() {
     }
   };
 
+  //Check Postal Code
+  const postalCodeRegex = /^[A-Z][0-9][A-Z]\s?[0-9][A-Z][0-9]$/;
+  const handlePostCode = (e) => {
+    const value = e.target.value.toUpperCase();
+    setPostCode(value);
+
+    if (!postalCodeRegex.test(value)) {
+      setPostErr("Please enter a valid postal code");
+    } else {
+      setPostErr("");
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
@@ -104,6 +119,7 @@ export default function Register() {
         password,
         phone,
         address,
+        postCode,
         city: city,
         province: selectedProvince,
         account: selectedAccount,
@@ -300,13 +316,39 @@ export default function Register() {
                     "& .MuiSvgIcon-root": { color: "#fff" }, // Changes dropdown arrow color
                   }}
                 >
-                  {cities.map((city) => (
-                    <MenuItem key={city._id} value={city._id}>
-                      {city.name}
-                    </MenuItem>
-                  ))}
+                  {selectedProvince ? (
+                    <>
+                      {cities.map((city) => (
+                        <MenuItem key={city._id} value={city._id}>
+                          {city.name}
+                        </MenuItem>
+                      ))}
+                    </>
+                  ) : (
+                    <MenuItem value="">Choose a Province first</MenuItem>
+                  )}
                 </Select>
               </FormControl>
+              <TextField
+                id="postCode"
+                label="Postal Code"
+                type="text"
+                InputLabelProps={{ style: { color: "#fff" } }}
+                sx={{
+                  marginBottom: "30px",
+                  "& .MuiInputBase-input": { color: "#fff" },
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": { borderColor: "#fff" },
+                    "&:hover fieldset": { borderColor: "#689D6D" },
+                    "&.Mui-focused fieldset": { borderColor: "#fff" },
+                  },
+                }}
+                onChange={handlePostCode}
+                value={postCode}
+                error={!!postErr}
+                helperText={postErr}
+                required
+              />
 
               <FormControl sx={{ marginBottom: "30px" }}>
                 <FormLabel
