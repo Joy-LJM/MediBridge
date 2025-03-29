@@ -14,6 +14,9 @@ body {
   font-family: "Inknut Antiqua", serif;
   background-color: #d1e3c4;
   box-sizing: border-box;
+  padding-right: 0!important;
+  overflow-y: scroll!important;
+  
 }
 .inknut-antiqua-regular {
   font-family: "Inknut Antiqua", serif;

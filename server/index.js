@@ -141,15 +141,43 @@ app.post("/verify", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   db = await connection();
-  const user = await db.collection("users").findOne({ email });
-
-  if (!user) {
-    return res.json({ code: 0, message: "Invalid username !" });
+  const user = await db
+    .collection("users")
+    .aggregate([
+      { $match: { email } },
+      {
+        $lookup: {
+          from: "provinces",
+          localField: "province",
+          foreignField: "_id",
+          as: "provinceDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "cities",
+          localField: "city",
+          foreignField: "_id",
+          as: "cityDetails",
+        },
+      },
+      {
+        $unwind: { path: "$provinceDetails", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $unwind: { path: "$cityDetails", preserveNullAndEmptyArrays: true },
+      },
+    ])
+    .toArray(); // FIXED: Convert cursor to array
+  if (!user.length) {
+    return res.json({ code: 0, message: "Invalid username!" });
   }
   console.log(user, "user");
+  const userData = user[0] || {};
+  console.log(userData, "userData");
   // To check a password:
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-  if (!user.password || !isPasswordValid) {
+  const isPasswordValid = await bcrypt.compare(password, userData.password);
+  if (!userData.password || !isPasswordValid) {
     return res.json({ code: 0, message: "Invalid password !" });
   }
 
@@ -157,10 +185,15 @@ app.post("/login", async (req, res) => {
     code: 1,
     message: "Login successful",
     user: {
-      username: user.username,
-      email: user.email,
-      id: user._id,
-      account: user.account,
+      firstname: userData.firstname,
+      lastname: userData.lastname,
+      email: userData.email,
+      id: userData._id,
+      account: userData.account,
+      address: userData.address,
+      province: userData.province,
+      phone: userData.phone,
+      city: userData.city,
     },
   });
 });
@@ -640,7 +673,7 @@ app.post("/prescription/addPatient", async (req, res, next) => {
   try {
     const data = req.body || {};
     const { email } = data;
-    const hasPsw = await bcrypt.hash(userData.password, 12);
+    const hasPsw = await bcrypt.hash("123456", 12);
     db = await connection();
     db.collection("users")
       .insertOne({ ...data, password: hasPsw })
@@ -746,10 +779,7 @@ const uploadDir = path.join(__dirname, "uploads");
 
 app.get("/prescription/:id/download", async (req, res, next) => {
   try {
-    console.log(2222);
-
     const id = req.params.id;
-    console.log(id, "lllll");
     const db = await connection();
 
     db.collection("prescriptions")
@@ -774,6 +804,49 @@ app.get("/prescription/:id/download", async (req, res, next) => {
   } catch (err) {
     console.log(err);
     next(err);
+  }
+});
+app.post("/user/:id/update", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+
+    db = await connection();
+    const user = await db
+      .collection("users")
+      .updateOne({ _id: new ObjectId(id) }, { $set: data });
+    if (user.modifiedCount === 0) {
+      return res.json({ code: 0, message: "Information update failed!" });
+    }
+
+    res.json({
+      code: 1,
+      message: "Information update successfully.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ code: 0, message: "Internal server error." });
+  }
+});
+app.get("/user/:id/delete", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    db = await connection();
+    const user = await db
+      .collection("users")
+      .deleteOne({ _id: new ObjectId(id) });
+    if (user.deletedCount === 0) {
+      return res.json({ code: 0, message: "Account deletion failed!" });
+    }
+
+    res.json({
+      code: 1,
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ code: 0, message: "Internal server error." });
   }
 });
 // MongoDB functions
