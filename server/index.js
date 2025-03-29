@@ -174,7 +174,7 @@ app.post("/login", async (req, res) => {
   if (!user.length) {
     return res.json({ code: 0, message: "Invalid username!" });
   }
-  console.log(user, "user");
+
   const userData = user[0] || {};
   console.log(userData, "userData");
   // To check a password:
@@ -671,23 +671,25 @@ app.get("/prescription/province/:province", async (req, res, next) => {
     next(err);
   }
 });
+
 app.post("/prescription/addPatient", async (req, res, next) => {
   try {
     const data = req.body || {};
     const { email } = data;
-    const hasPsw = await bcrypt.hash("123456", 12);
+    const initialPsw = "123456";
+    const hasPsw = await bcrypt.hash(initialPsw, 12);
     db = await connection();
     db.collection("users")
       .insertOne({ ...data, password: hasPsw })
       .then(async () => {
-        // send email to user
         // Send verification email
+        const websiteUrl = "http://localhost:5173/";
         const emailData = {
           to: email,
           from: "hathaonhin@gmail.com",
           subject: "Welcome to MediBridge!",
           text: `Your MediBridge account is registered successfully. `,
-          html: `<p>Your MediBridge account is registered successfully. Your initial password is: <strong>123456</strong>, please update your password later.</p>`,
+          html: `<p>Your MediBridge account is registered successfully. Your initial password is: <strong>${initialPsw}</strong>, please update your password via ${websiteUrl}.</p>`,
         };
 
         await sgMail.send(emailData);
@@ -787,8 +789,6 @@ app.get("/prescription/:id/download", async (req, res, next) => {
     db.collection("prescriptions")
       .findOne({ _id: new ObjectId(id) })
       .then((prescription) => {
-        console.log(prescription, "prescription");
-
         if (!prescription) {
           return res.status(404).send({ message: "Prescription not found" });
         }
@@ -797,7 +797,6 @@ app.get("/prescription/:id/download", async (req, res, next) => {
           prescription.prescription_file.filename
         );
         res.download(filePath, prescription.prescription_file.originalname);
-        console.log(prescription, "result");
       })
       .catch((err) => {
         console.log(err);
