@@ -18,6 +18,7 @@ import { HOST_URL, SUCCESS_CODE } from "../constant";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,10 +43,14 @@ export default function Login() {
         const { data } = res;
         const { code, message, user } = data;
         if (code === SUCCESS_CODE) {
-          navigate("/dashboard");
-          toast.success(message);
+          //   navigate("/dashboard");
+          //   toast.success(message);
+          //   localStorage.setItem("userInfo", JSON.stringify(user));
+          //if (res.data.code === 200) {
+          // console.log("Setting userInfo in localStorage"); // Debugging log
           localStorage.setItem("userInfo", JSON.stringify(user));
-        }else{
+          setSuccessMessage("Login successful");
+        } else {
           toast.error(message);
         }
       })
@@ -124,6 +129,7 @@ export default function Login() {
                 </Button>
               </FormControl>
             </form>
+            {successMessage && <div>{successMessage}</div>}
           </Box>
         </Container>
         {/* <Footer /> */}
