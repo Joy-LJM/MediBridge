@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import {
   TextField,
@@ -9,7 +9,7 @@ import {
   Box,
 } from "@mui/material";
 import PropTypes from "prop-types";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { GET_PHARMACY_LIST, HOST_URL } from "../constant";
 
 const PharmacySearch = ({
@@ -21,7 +21,19 @@ const PharmacySearch = ({
   handleChangeAddress,
 }) => {
   const [loading, setLoading] = useState(false);
-
+  const [isClickSearch, setIsClickSearch] = useState(false);
+  const [isChangeAddr, setIsChangeAddr] = useState(false);
+  const oldAddr = useRef(address);
+  const oldAddrVal = oldAddr.current;
+  useEffect(() => {
+    if (oldAddrVal !== address) {
+      setIsChangeAddr(true);
+      setIsClickSearch(false);
+      setPharmacies([]);
+      handleSelectPharmacy("")
+    }
+    oldAddr.current = address;
+  }, [address, setPharmacies, oldAddrVal, handleSelectPharmacy]);
   // Haversine Formula: Calculate distance between two lat/lng points
   function haversineDistance(lat1, lon1, lat2, lon2) {
     const toRad = (x) => (x * Math.PI) / 180;
@@ -44,7 +56,7 @@ const PharmacySearch = ({
     )}&format=json`;
     const response = await axios.get(url);
     if (!response.data.length) {
-      toast.error("Address not found");
+      toast.error("No pharmacies found near your location");
       setLoading(false);
       return;
     }
@@ -60,64 +72,70 @@ const PharmacySearch = ({
       toast.error("Please input address!");
       return;
     }
-
+    setIsClickSearch(true);
     setLoading(true);
     const res = await axios.get(GET_PHARMACY_LIST);
-    if (res.status === 200) {
-      const { pharmacyList } = res.data;
-// 50 Weber St N, Waterloo, Ontario N2J 3G7
-      const originCoords = await getCoordinates(address);
-      const addressCoords = await Promise.all(
-        pharmacyList.map(async(item) => {
-          const { address, ...rest } = item;
-          let cityName='';
-          let provinceName='';
-          const provinceRes= await axios
-          .get(`${HOST_URL}/prescription/province/${rest.province??''}`)
-          const cityRes= await axios
-          .get(`${HOST_URL}/prescription/city/${rest.city??''}`)
-          if (cityRes.status === 200) {
-            cityName=cityRes.data.cityName[0].name;
-          }
-          if (provinceRes.status === 200) {
-            provinceName=provinceRes.data.provinceName[0].name;
-          }
-          console.log(cityName,provinceName,'city')
-          const joinAddr=`${address} ${cityName} ${provinceName}`
-          console.log(joinAddr,'joinAddr')
-          return getCoordinates(address, rest);
-        })
-      );
+    try {
+      if (res.status === 200) {
+        const { pharmacyList } = res.data;
 
-      setLoading(false);
+        const originCoords = await getCoordinates(address);
+        const addressCoords = await Promise.all(
+          pharmacyList.map(async (item) => {
+            try {
+              const { address, ...rest } = item;
 
-      const sortedPharmacy = addressCoords
-        .map((addr) => ({
-          address: addr.address,
-          distance: haversineDistance(
-            originCoords.lat,
-            originCoords.lon,
-            addr.lat,
-            addr.lon
-          ),
-          ...addr.pharmacyInfo,
-        }))
-        .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+              const [provinceRes, cityRes] = await Promise.all([
+                axios.get(
+                  `${HOST_URL}/prescription/province/${rest.province ?? ""}`
+                ),
+                axios.get(`${HOST_URL}/prescription/city/${rest.city ?? ""}`),
+              ]);
+              let cityName =
+                cityRes.status === 200 ? cityRes.data.cityName.name : "";
+              let provinceName =
+                provinceRes.status === 200
+                  ? provinceRes.data.provinceName.name
+                  : "";
 
-      setPharmacies(sortedPharmacy);
-    } else {
-      toast.error("Fetch pharmacy data failed!");
+              const joinAddr = `${address} ${cityName} ${provinceName}`;
+              console.log(joinAddr, "joinAddr");
+              return getCoordinates(joinAddr, rest);
+            } catch (error) {
+              console.error("Error fetching city/province data:", error);
+              return null;
+            }
+          })
+        );
+        const validAddresses = addressCoords.filter((addr) => addr !== null);
+        setLoading(false);
+
+        const sortedPharmacy = validAddresses
+          .map((addr) => ({
+            address: addr.address,
+            distance: haversineDistance(
+              originCoords.lat || "",
+              originCoords.lon || "",
+              addr.lat,
+              addr.lon
+            ),
+            ...addr.pharmacyInfo,
+          }))
+          .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+
+        setPharmacies(sortedPharmacy);
+      } else {
+        toast.error("Fetch pharmacy data failed!");
+      }
+    } catch (error) {
+      console.error("Error fetching city/province data:", error);
+      return null;
     }
   }, [address, setPharmacies]);
 
   return (
     <>
-      <ToastContainer />
       <Box sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
-        {/* <Typography variant="h5" gutterBottom>
-        Pharmacy Finder
-      </Typography> */}
-
         <TextField
           fullWidth
           label="Enter Address (e.g., 31 Devitte Ave N)"
@@ -126,41 +144,36 @@ const PharmacySearch = ({
           onChange={handleChangeAddress}
           sx={{ mb: 2 }}
         />
-
         <Button
           variant="contained"
           color="primary"
           onClick={getSortedAddresses}
           fullWidth
+          disabled={loading}
         >
-          Search
+          {loading ? <CircularProgress size={20} /> : "Search"}
         </Button>
 
-        {/* Show Loading Spinner When Searching */}
-        {loading && (
-          <Box sx={{ display: "flex", justifyContent: "center", my: 2 }}>
-            <CircularProgress />
-          </Box>
-        )}
-
-        {/* Show Select Dropdown Only If Pharmacies Are Found */}
-        {pharmacies.length > 0 && (
-          <Select
-            fullWidth
-            displayEmpty
-            sx={{ mt: 3 }}
-            onChange={handleSelectPharmacy}
-            value={selectedPharmacy}
-            disabled={loading}
-          >
-            <MenuItem disabled>Select a Pharmacy</MenuItem>
-            {pharmacies.map((pharmacy, index) => (
-              <MenuItem key={index} value={pharmacy._id}>
-                {`${pharmacy.firstname} - ${pharmacy.distance}`}
-              </MenuItem>
-            ))}
-          </Select>
-        )}
+        {/* Show Select Dropdown Only If Pharmacies Are Found and research after address change */}
+        {isChangeAddr && !isClickSearch
+          ?null: pharmacies.length > 0 && (
+              <Select
+                fullWidth
+                displayEmpty
+                sx={{ mt: 3 }}
+                onChange={handleSelectPharmacy}
+                value={selectedPharmacy}
+                disabled={loading || !address}
+              >
+                <MenuItem disabled>Select a Pharmacy</MenuItem>
+                {pharmacies.map((pharmacy, index) => (
+                  <MenuItem key={index} value={pharmacy._id}>
+                    {`${pharmacy.firstname} - ${pharmacy.distance}`}
+                  </MenuItem>
+                ))}
+              </Select>
+            )
+          }
       </Box>
     </>
   );

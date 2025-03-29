@@ -4,7 +4,6 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
 dotenv.config();
 
 const cors = require("cors"); //need this to set this API to allow requests from other servers
@@ -144,12 +143,12 @@ app.post("/verify", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   db = await connection();
-
   const user = await db.collection("users").findOne({ email });
 
   if (!user) {
     return res.json({ code: 0, message: "Invalid username !" });
   }
+  console.log(user, "user");
   // To check a password:
   const isPasswordValid = await bcrypt.compare(password, user.password);
   if (!user.password || !isPasswordValid) {
@@ -168,6 +167,89 @@ app.post("/login", async (req, res) => {
   });
 });
 
+let validateCode = {};
+app.post("/validateEmail", async (req, res) => {
+  const { email } = req.body;
+  db = await connection();
+  const user = await db.collection("users").findOne({ email });
+
+  if (!user) {
+    return res.json({ code: 0, message: "Email is not found!" });
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000);
+  const emailData = {
+    to: email,
+    from: "hathaonhin@gmail.com",
+    subject: "Your Verification Code",
+    text: `Your verification code is: ${code}`,
+    html: `<p>Your verification code is: <strong>${code}</strong></p>`,
+  };
+  console.log(code, "code");
+
+  validateCode.code = code;
+  validateCode.email = email;
+  validateCode.expiresAt = Date.now() + verification_time;
+
+  const emailRes = await sgMail.send(emailData);
+  if (emailRes) {
+    res.json({
+      code: 1,
+      message: "Send code successfully",
+      userInfo: {
+        _id: user._id,
+      },
+    });
+  }
+});
+app.post("/validateCode", async (req, res) => {
+  const { email, code } = req.body;
+  db = await connection();
+  const user = await db.collection("users").findOne({ email });
+
+  if (!user) {
+    return res.json({ code: 0, message: "Email is not found!" });
+  }
+
+  if (Date.now() > validateCode.expiresAt) {
+    validateCode = {}; // Remove expired code
+    return res.json({
+      code: 0,
+      message: "Verification code has expired.",
+    });
+  }
+
+  if (parseInt(code) !== validateCode.code) {
+    return res.json({ code: 0, message: "Invalid verification code." });
+  }
+
+  res.json({
+    code: 1,
+    message: "Valid verification code",
+  });
+});
+app.post("/resetPsw", async (req, res) => {
+  try {
+    const { _id, password } = req.body;
+
+    db = await connection();
+    const hasPsw = await bcrypt.hash(password, 12);
+    const user = await db
+      .collection("users")
+      .updateOne({ _id: new ObjectId(_id) }, { $set: { password: hasPsw } });
+    if (user.modifiedCount === 0) {
+      return res.json({ code: 0, message: "Password reset failed!" });
+    }
+
+    res.json({
+      code: 1,
+      message: "Password reset successfully.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ code: 0, message: "Internal server error." });
+  }
+});
 // Return list of provinces
 app.get("/api/provinces", async (request, response) => {
   let provinces = await getProvinces();
@@ -399,24 +481,41 @@ async function updateStatus(id, statusId) {
 
 // dashboard routes
 
-app.post("/prescription/submit", upload.single(), async (req, res, next) => {
-  try {
-    const data = req.body;
-    const file = req.file;
-    console.log(data, file, "submit");
-    db = await connection();
-    db.collection("prescription")
-      .insertOne({ ...data, file: file.buffer.toString("base64") })
-      .then(() => {
-        res.json({
+const upload = multer({ dest: "uploads/" });
+app.post(
+  "/prescription/submit",
+  upload.single("prescription_file"),
+  async (req, res, next) => {
+    try {
+      const { patient_id, doctor_id, pharmacy_id, ...data } = req.body;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ code: 0, message: "File is required!" });
+      }
+
+      const db = await connection();
+      const result = await db.collection("prescriptions").insertOne({
+        ...data,
+        patient_id: new ObjectId(patient_id),
+        doctor_id: new ObjectId(doctor_id),
+        pharmacy_id: new ObjectId(pharmacy_id),
+        prescription_file: file,
+      });
+
+      console.log("DB Insert Result:", result);
+
+      if (result.acknowledged) {
+        return res.json({
           code: 1,
           message: "Prescription is submitted successfully!",
         });
-      });
-  } catch (err) {
-    next(err);
+      }
+    } catch (err) {
+      next(err);
+    }
   }
-});
+);
 
 app.get("/prescription/patient", async (req, res, next) => {
   try {
@@ -424,14 +523,38 @@ app.get("/prescription/patient", async (req, res, next) => {
 
     const patientList = await db
       .collection("users")
-      .find({ account: "3" })
+      .find({ account: "67b270a10a93bde65f142af3" })
       .toArray();
 
-    const patientRes = patientList.map(
-      ({ _id, firstname, lastname, account, email, address }) => {
-        const res = { _id, firstname, lastname, account, email, address };
-        return res;
-      }
+    const patientRes = await Promise.all(
+      patientList.map(
+        async ({
+          _id,
+          firstname,
+          lastname,
+          account,
+          email,
+          address,
+          city,
+          province,
+        }) => {
+          const [cityData, provinceData] = await Promise.all([
+            db.collection("cities").findOne({ _id: new ObjectId(city) }),
+            db.collection("provinces").findOne({ _id: new ObjectId(province) }),
+          ]);
+
+          return {
+            _id,
+            firstname,
+            lastname,
+            account,
+            email,
+            address: `${address}${cityData ? "," + cityData.name : ""}${
+              provinceData ? "," + provinceData.name : ""
+            }`,
+          };
+        }
+      )
     );
 
     res.json({
@@ -441,22 +564,217 @@ app.get("/prescription/patient", async (req, res, next) => {
     next(err);
   }
 });
+app.get("/prescription/pharmacy", async (req, res, next) => {
+  try {
+    db = await connection();
+
+    const pharmacyList = await db
+      .collection("users")
+      .find({ account: "67b270940a93bde65f142af2" })
+      .toArray();
+
+    const pharmacyRes = pharmacyList.map(
+      ({
+        _id,
+        firstname,
+        lastname,
+        account,
+        email,
+        address,
+        city,
+        province,
+        // postalCode
+      }) => {
+        const res = {
+          _id,
+          firstname,
+          lastname,
+          account,
+          email,
+          address,
+          city,
+          province,
+        };
+        return res;
+      }
+    );
+
+    res.json({
+      pharmacyList: pharmacyRes,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.get("/prescription/city/:city", async (req, res, next) => {
+  try {
+    db = await connection();
+    const { city } = req.params;
+
+    const cityName = await db
+      .collection("cities")
+      .findOne({ _id: new ObjectId(city) });
+
+    res.json({
+      cityName,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+app.get("/prescription/province/:province", async (req, res, next) => {
+  try {
+    db = await connection();
+    const { province } = req.params;
+
+    const provinceName = await db
+      .collection("provinces")
+      .findOne({ _id: new ObjectId(province) });
+
+    res.json({
+      provinceName,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 app.post("/prescription/addPatient", async (req, res, next) => {
   try {
     const data = req.body || {};
     const { email } = data;
+    const hasPsw = await bcrypt.hash(userData.password, 12);
     db = await connection();
     db.collection("users")
-      .insertOne(data)
-      .then(() => {
+      .insertOne({ ...data, password: hasPsw })
+      .then(async () => {
         // send email to user
+        // Send verification email
+        const emailData = {
+          to: email,
+          from: "hathaonhin@gmail.com",
+          subject: "Welcome to MediBridge!",
+          text: `Your MediBridge account is registered successfully. `,
+          html: `<p>Your MediBridge account is registered successfully. Your initial password is: <strong>123456</strong>, please update your password later.</p>`,
+        };
 
+        await sgMail.send(emailData);
         res.json({
           code: 1,
           message: "Add patient successfully!",
         });
       });
   } catch (err) {
+    next(err);
+  }
+});
+app.get("/patient/orders", async (req, res, next) => {
+  try {
+    const { userId } = req.query;
+    console.log(userId, "userId");
+
+    db = await connection();
+    var results = await db
+      .collection("prescriptions")
+      .aggregate([
+        {
+          $match: { patient_id: new ObjectId(userId) },
+        },
+        {
+          $lookup: {
+            from: "deliveryStatus",
+            let: { delivery_status: "$delivery_status" }, //defining a variable called delivery_status and assigning it the value of the delivery_status field from the prescriptions collection
+            pipeline: [
+              //define a series of aggregation stages that will be executed in order
+              {
+                $match: {
+                  $expr: {
+                    //$expr evaluate an expression that checks if the _id field of the current document in the deliveryStatus collection is equal to the delivery_status variable we defined earlier.
+                    $eq: ["$_id", { $toObjectId: "$$delivery_status" }], //converts the delivery_status variable to an ObjectId.
+                  },
+                },
+              },
+              {
+                $project: {
+                  //transform documents by adding or removing fields.
+                  _id: 0, //removing the _id field
+                  status: 1, //keep status field
+                },
+              },
+            ],
+            as: "delivery_status_value",
+          },
+        },
+        {
+          $addFields: {
+            delivery_status_value: {
+              $arrayElemAt: ["$delivery_status_value.status", 0], //extract the first element of the status array and assign to the new field delivery_status_value
+            },
+          },
+        },
+
+        {
+          $sort: {
+            //sorts the results by the uploaded_date field in descending order
+            uploaded_date: -1,
+          },
+        },
+      ])
+      .toArray();
+    console.log(results, "results");
+    return res.json(results);
+  } catch (err) {
+    next(err);
+  }
+});
+app.post("/patient/addReview", async (req, res, next) => {
+  try {
+    const data = req.body;
+
+    const db = await connection();
+    db.collection("review")
+      .insertOne({ ...data, user_id: new ObjectId(data.user_id) })
+      .then(() => {
+        res.json({
+          code: 1,
+          message: "Comment is submitted successfully!",
+        });
+      });
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+const uploadDir = path.join(__dirname, "uploads");
+
+app.get("/prescription/:id/download", async (req, res, next) => {
+  try {
+    console.log(2222);
+
+    const id = req.params.id;
+    console.log(id, "lllll");
+    const db = await connection();
+
+    db.collection("prescriptions")
+      .findOne({ _id: new ObjectId(id) })
+      .then((prescription) => {
+        console.log(prescription, "prescription");
+
+        if (!prescription) {
+          return res.status(404).send({ message: "Prescription not found" });
+        }
+        const filePath = path.join(
+          uploadDir,
+          prescription.prescription_file.filename
+        );
+        res.download(filePath, prescription.prescription_file.originalname);
+        console.log(prescription, "result");
+      })
+      .catch((err) => {
+        console.log(err);
+        next(err);
+      });
+  } catch (err) {
+    console.log(err);
     next(err);
   }
 });

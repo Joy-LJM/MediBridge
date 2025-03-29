@@ -27,10 +27,9 @@ textarea {
   }
 }
 
-.prescript {
-  width: 150px;
-  height: 200px;
-}
 .textErr{
   margin-bottom: 10px !important;
+}
+.tabContent{
+  margin-bottom: 20px;
 }

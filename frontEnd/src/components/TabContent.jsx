@@ -65,6 +65,7 @@ export default function TabContent({ label, children }) {
           borderRight: 1,
           borderColor: "divider",
           backgroundColor: "#689D6D",
+          minHeight:"800px",
           color: "white",
           "& .MuiTab-root": { color: "white !important" }, // Sets default text color to white
           "& .Mui-selected": {
@@ -81,7 +82,7 @@ export default function TabContent({ label, children }) {
           {...a11yProps(0)}
         />
       </Tabs>
-      <TabPanel value={value} index={0}>
+      <TabPanel value={value} index={0} className="tabContent">
         <Card
           sx={{
             width: "60vw",

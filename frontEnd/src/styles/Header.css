@@ -1,5 +1,8 @@
 header {
   height: 100px;
+  position: fixed;
+  width: 100%;
+  z-index: 1;
   background-color: var(--darkGreen);
   color: #fff;
   display: flex;

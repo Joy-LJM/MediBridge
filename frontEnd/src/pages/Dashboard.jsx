@@ -6,17 +6,29 @@ import { ROLE_MAP } from "../constant";
 import PatientDashboard from "./PatientDashboard";
 import ShipperDashboard from "./ShipperDashboard";
 import PharmacyDashboard from "./PharmacyDashboard";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
-  const userInfo=localStorage.getItem("userInfo");
-  const {account}=JSON.parse(userInfo)||{};
+  const navigate = useNavigate();
 
+  const userInfo = localStorage.getItem("userInfo");
+  const { account } = JSON.parse(userInfo) || {};
+  useEffect(()=>{
+    if(!userInfo){
+      navigate('/')
+    }
+  },[navigate, userInfo])
+  
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "fit-content" }} className="container">
-     {account===ROLE_MAP.doctor&&<DoctorDashboard />} 
-     {account===ROLE_MAP.patient&&<PatientDashboard />} 
-     {account===ROLE_MAP.shipper&&<ShipperDashboard />} 
-     {account===ROLE_MAP.pharmacy&&<PharmacyDashboard />} 
+    <Box
+      sx={{ display: "flex", flexDirection: "column", height: "fit-content" }}
+      className="container"
+    >
+      {account === ROLE_MAP.doctor && <DoctorDashboard />}
+      {account === ROLE_MAP.patient && <PatientDashboard />}
+      {account === ROLE_MAP.shipper && <ShipperDashboard />}
+      {account === ROLE_MAP.pharmacy && <PharmacyDashboard />}
     </Box>
   );
 }
