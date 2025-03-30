@@ -94,7 +94,6 @@ export default function Login() {
                     },
                   }}
                   onChange={(e) => setEmail(e.target.value)}
-                  // required
                 />
                 <TextField
                   id="password"
@@ -111,7 +110,6 @@ export default function Login() {
                     },
                   }}
                   onChange={(e) => setPassword(e.target.value)}
-                  // required
                 />
                 <Button
                   variant="outlined"
@@ -132,7 +130,6 @@ export default function Login() {
             {successMessage && <div>{successMessage}</div>}
           </Box>
         </Container>
-        {/* <Footer /> */}
       </div>
     </>
   );
