@@ -263,16 +263,16 @@ export default function Header({ isLogin, handleLogout, userInfo }) {
                     label: "Last Name",
                   },
                   {
-                    value: formData?.address??"",
-                    type: "input",
-                    key: "address",
-                    label: "Address",
-                  },
-                  {
                     value: formData?.phone??"",
                     type: "input",
                     key: "phone",
                     label: "Phone Number",
+                  },
+                  {
+                    value: formData?.address??"",
+                    type: "input",
+                    key: "address",
+                    label: "Address",
                   },
                   {
                     value: formData?.province??"",
