@@ -1,0 +1,156 @@
+Steps v1:
+=========
+* Setup DB and run starting code
+* Add jQuery UI datepacker support
+* Add some validation requirements to Customer entity: all required + password length cannot be greater than 25
+* Add placeholder for All validn err messages at top of form
+* Do validity check in controller
+* Run and test it
+* Do a server-side check that DoB is not in future (code-snippet #1)
+(Note: you could also configure that client side using the jQuery UI datepicker)
+
+Let's call that v1 because in v2 we will:
+- use a custom attribute to ensure customers meet a minimum age requirement
+- improve validn err messages UX by adding validn err msgs alongside fields in err & highlighting them
+- Password comparison
+- Use a RegEx to further constrain usernames to not allowing spaces or special chars
+- Validate Email format
+- Use a remote attr to ensure email address isn't already in use before the user even submits
+
+
+Steps v2:
+=========
+* Add CSS for styling field-specific validn err msgs + field highlighting (snippet #2)
+* Change registration form to handle field-specific validn err msgs + field highlighting (snippet #3)
+* Add a new JavaScript file "minimum-age.js"
+* Enable use of all validation scripts (snippet #4)
+* Add password confirmation to both form & entity (but not mapped on the entity)
+* Add RegEx, EmailAddress, and Compare attrs to entity
+* In Registration controller for now get rid of DoB check (we'll improve it soon with min age attr) and add a general model err in else clause
+* Either add a new migration or blow away the old one and redo an initial after dropping DB
+* Do a check in on progress and test app
+* To support remote validation  let's first add a Validation controller that has access to a DB context object
+* To it let's add an action method CheckEmail that takes an email as a param and will return JSON true if email is available for use, a msg otherwise
+* To implement this action let's define a helper method (snippet #5)
+* Do a check in on progress and test app (redoing DB again)
+* Add a custom attribe class named MinimumAgeAttribute that inherits from the base Attr class ValidationAttribute & implements the IClientModelValidator interface
+* Implement the class (snippet #6) so that it takes a min age param
+* Use the new attribute in the Customer entity
+* And finally add the same logic on client-side validation to the "minimum-age.js" file (snippet #7)
+* Then test everything after re-initializing DB
+
+~~~~~~~~~~ code snippet #1:
+            string propName = nameof(customer.DOB);
+            if (ModelState.GetValidationState(propName) == ModelValidationState.Valid)
+            {
+                if (customer.DOB > DateTime.Today)
+                {
+                    ModelState.AddModelError(propName, "A date of birth cannot be in the future.");
+                }
+            }
+
+~~~~~~~~~~ code snippet #2:
+
+.input-validation-error {
+    border: 2px solid #dc3545;  /* same red as text-danger */
+    background-color: #faebd7;  /* antique white */
+}
+
+.validation-summary-valid {
+    display: none;
+}
+
+.validation-summary-errors ul {
+    list-style: none;
+}
+
+~~~~~~~~~~ code snippet #3:
+All --> ModelOnly
+
+add row class to form-group elmts + col-sm-2 (label) & col-sm-4 (input)
++
+for validation err msg spans:
+        <div class="col-sm-6">
+            <span asp-validation-for="@Model.Username" class="text-danger"></span>
+        </div>
+
+~~~~~~~~~~ code snippet #4:
+@section scripts {
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js"></script>
+    <script src="~/js/minimum-age.js"></script>
+}
+
+~~~~~~~~~~ code snippet #5:
+        private string CheckIfEmailExistsInDb(string email)
+        {
+            string msg = "";
+            if (!string.IsNullOrEmpty(email))
+            {
+                var customer = _registrationContext.Customers.Where(c => c.EmailAddress.ToLower() == email.ToLower()).FirstOrDefault();
+                if (customer != null)
+                    msg = $"The email address \"{email}\" is already in use.";
+            }
+
+            return msg;
+        }
+
+
+~~~~~~~~~~ code snippet #6:
+        public MinimumAgeAttribute(int minAge)
+        {
+            _minAge = minAge;
+        }
+
+        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+        {
+            // If value is a proper DateTome value, then we'll downcast to it
+            // add _minAge years to the value and see if it's still less than
+            // today - if so, then value is good, i.e. above min age.
+            if (value is DateTime)
+            {
+                DateTime dateToCheck = (DateTime) value;
+
+                // add minAge years:
+                dateToCheck = dateToCheck.AddYears(_minAge);
+                if (dateToCheck <= DateTime.Today)
+                {
+                    return ValidationResult.Success;
+                }
+            }
+
+            return new ValidationResult(GetMsg(validationContext.DisplayName));
+        }
+        public void AddValidation(ClientModelValidationContext context)
+        {
+            // Add the required "data-val-*" attributes:
+            if (!context.Attributes.ContainsKey("data-val"))
+                context.Attributes.Add("data-val", "true");
+
+            context.Attributes.Add("data-val-minimumage-years", _minAge.ToString());
+            context.Attributes.Add("data-val-minimumage", GetMsg(context.ModelMetadata.DisplayName ?? context.ModelMetadata.Name));
+        }
+
+        private string GetMsg(string propName) => base.ErrorMessage ?? $"{propName} must be at least {_minAge} years old.";
+
+        private int _minAge;
+
+
+~~~~~~~~~~ code snippet #7:
+jQuery.validator.addMethod("minimumage", function(value, element, param) {
+	if (value === '')
+		return false;
+
+	var dateToCheck = new Date(value);
+	if (dateToCheck === "Invalid Date")
+		return false;
+
+	var minYears = Number(param);
+
+	dateToCheck.setFullYear(dateToCheck.getFullYear() + minYears);
+
+	var today = new Date();
+	return dateToCheck <= today;
+});
+
+jQuery.validator.unobtrusive.adapters.addSingleVal("minimumage", "years");

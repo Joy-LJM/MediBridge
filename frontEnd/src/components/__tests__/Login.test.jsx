@@ -64,7 +64,6 @@ describe("Login Component", () => {
         user: { id: 1, username: "testuser" },
       },
     };
-
     // Mock the axios post request
     axios.post.mockResolvedValue(mockResponse);
 
@@ -73,7 +72,6 @@ describe("Login Component", () => {
         <Login />
       </MemoryRouter>
     );
-
     // Fill the email and password fields
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: "test@example.com" },
@@ -81,10 +79,8 @@ describe("Login Component", () => {
     fireEvent.change(screen.getByLabelText(/password/i), {
       target: { value: "password123" },
     });
-
     // Submit the form
     fireEvent.click(screen.getByRole("button", { name: /submit/i }));
-
     // Wait for the success message and localStorage call
     await waitFor(() => {
       expect(screen.getByText("Login successful")).toBeInTheDocument();
