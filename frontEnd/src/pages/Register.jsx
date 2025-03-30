@@ -19,6 +19,7 @@ import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
+import { POSTCODE_REGEX } from "../constant";
 // import { HOST_URL } from "../constant";
 
 export default function Register() {
@@ -97,12 +98,12 @@ export default function Register() {
   };
 
   //Check Postal Code
-  const postalCodeRegex = /^[A-Z][0-9][A-Z]\s?[0-9][A-Z][0-9]$/;
+
   const handlePostCode = (e) => {
     const value = e.target.value.toUpperCase();
     setPostCode(value);
 
-    if (!postalCodeRegex.test(value)) {
+    if (!POSTCODE_REGEX.test(value)) {
       setPostErr("Please enter a valid postal code");
     } else {
       setPostErr("");

@@ -24,11 +24,11 @@ const PATIENT_ORDERS = `${HOST_URL}/patient/orders`;
 const ADD_REVIEWS = `${HOST_URL}/patient/addReview`;
 const USER_ACTION = `${HOST_URL}/user`;
 
-const POSTCODE_REGEX = /^[A-Z][0-9][A-Z]\s[0-9][A-Z][0-9]$/;
 const PHONE_REGEX = /^\(?(\d{3})\)?(\d{3})(\d{4})$/;
-
 const EMAIL_REGEX =
   /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+const POSTCODE_REGEX = /^[A-Z][0-9][A-Z]\s?[0-9][A-Z][0-9]$/;
+
 export {
   HOST_URL,
   LOGIN,

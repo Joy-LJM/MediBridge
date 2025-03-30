@@ -518,8 +518,7 @@ async function updateStatus(id, statusId) {
 
 /**END FUNCTION TO ADD DATA */
 
-// dashboard routes
-
+// doctor dashboard routes
 const upload = multer({ dest: "uploads/" });
 app.post(
   "/prescription/submit",
@@ -555,7 +554,6 @@ app.post(
     }
   }
 );
-
 app.get("/prescription/patient", async (req, res, next) => {
   try {
     db = await connection();
@@ -576,6 +574,7 @@ app.get("/prescription/patient", async (req, res, next) => {
           address,
           city,
           province,
+          postCode,
         }) => {
           const [cityData, provinceData] = await Promise.all([
             db.collection("cities").findOne({ _id: new ObjectId(city) }),
@@ -590,7 +589,7 @@ app.get("/prescription/patient", async (req, res, next) => {
             email,
             address: `${address}${cityData ? "," + cityData.name : ""}${
               provinceData ? "," + provinceData.name : ""
-            }`,
+            },${postCode}`,
           };
         }
       )
@@ -708,6 +707,7 @@ app.post("/prescription/addPatient", async (req, res, next) => {
     next(err);
   }
 });
+// patient dashboard
 app.get("/patient/orders", async (req, res, next) => {
   try {
     const { userId } = req.query;
@@ -813,6 +813,7 @@ app.get("/prescription/:id/download", async (req, res, next) => {
     next(err);
   }
 });
+// uer profile
 app.post("/user/:id/update", async (req, res) => {
   try {
     const { id } = req.params;
@@ -854,6 +855,65 @@ app.get("/user/:id/delete", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ code: 0, message: "Internal server error." });
+  }
+});
+// shipper dashboard
+app.get("/shipper/orders", async (req, res, next) => {
+  try {
+    const { userId } = req.query;
+    console.log(userId, "userId");
+
+    db = await connection();
+    var results = await db
+      .collection("prescriptions")
+      .aggregate([
+        {
+          $match: { patient_id: new ObjectId(userId) },
+        },
+        {
+          $lookup: {
+            from: "deliveryStatus",
+            let: { delivery_status: "$delivery_status" }, //defining a variable called delivery_status and assigning it the value of the delivery_status field from the prescriptions collection
+            pipeline: [
+              //define a series of aggregation stages that will be executed in order
+              {
+                $match: {
+                  $expr: {
+                    //$expr evaluate an expression that checks if the _id field of the current document in the deliveryStatus collection is equal to the delivery_status variable we defined earlier.
+                    $eq: ["$_id", { $toObjectId: "$$delivery_status" }], //converts the delivery_status variable to an ObjectId.
+                  },
+                },
+              },
+              {
+                $project: {
+                  //transform documents by adding or removing fields.
+                  _id: 0, //removing the _id field
+                  status: 1, //keep status field
+                },
+              },
+            ],
+            as: "delivery_status_value",
+          },
+        },
+        {
+          $addFields: {
+            delivery_status_value: {
+              $arrayElemAt: ["$delivery_status_value.status", 0], //extract the first element of the status array and assign to the new field delivery_status_value
+            },
+          },
+        },
+        {
+          $sort: {
+            //sorts the results by the uploaded_date field in descending order
+            uploaded_date: -1,
+          },
+        },
+      ])
+      .toArray();
+    console.log(results, "results");
+    return res.json(results);
+  } catch (err) {
+    next(err);
   }
 });
 // MongoDB functions
