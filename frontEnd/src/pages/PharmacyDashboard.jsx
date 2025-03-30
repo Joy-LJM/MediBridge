@@ -15,6 +15,7 @@ import "../styles/Dashboard.css";
 import "../styles/Pharmacy.css";
 import TabContent from "../components/TabContent";
 import axios from "axios";
+import { HOST_URL } from "../constant";
 
 export default function PharmacyDashboard() {
   const [prescriptions, setPrescriptions] = useState([]);
@@ -33,9 +34,10 @@ export default function PharmacyDashboard() {
       axios
         .get(`http://localhost:3000/api/pharmacy/prescriptions/${pharmacyId}`)
         .then((response) => {
-          // console.log("API Response:", response); // Log the full response
+          //console.log("API Response:", response); // Log the full response
           if (response.data && response.data.length > 0) {
             setPrescriptions(response.data);
+            //console.log(response.data);
           } else {
             console.log("No prescriptions found.");
           }
@@ -97,6 +99,7 @@ export default function PharmacyDashboard() {
             </Typography>
             <Grid container spacing={4} justifyContent="center" sx={{ my: 3 }}>
               {prescriptions.map((pres) => (
+                //console.log("Prescription Object:", pres),
                 <Grid item xs={12} sm={12} key={pres._id}>
                   <Card
                     sx={{
@@ -136,7 +139,9 @@ export default function PharmacyDashboard() {
                       >
                         Prescription : {/* Clickable PDF to open in modal */}
                         <Button
-                          onClick={() => handlePdfClick(pres.prescription_file)}
+                          onClick={() =>
+                            handlePdfClick(pres.prescription_file.filename)
+                          }
                           variant="contained"
                           color="primary"
                         >
@@ -345,8 +350,9 @@ export default function PharmacyDashboard() {
         fullWidth
       >
         <DialogContent>
+          {/* Embed the PDF inside the modal */}
           <embed
-            src={`src/assets/prescriptions/${selectedPdf}`}
+            src={`${HOST_URL}/uploads/${selectedPdf}`}
             width="100%"
             height="600px"
             type="application/pdf"
@@ -356,10 +362,11 @@ export default function PharmacyDashboard() {
           <Button onClick={handleCloseModal} color="primary">
             Close
           </Button>
+          {/* Download button for explicit download action */}
           <Button
             variant="contained"
             color="secondary"
-            href={`src/assets/prescriptions/${selectedPdf}`}
+            href={`${HOST_URL}/uploads/${selectedPdf}`}
             download
           >
             Download PDF

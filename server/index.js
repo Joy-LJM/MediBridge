@@ -19,6 +19,9 @@ sgMail.setApiKey(process.env.API_KEY);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); //need this line to be able to receive/parse JSON from request
+// app.use("/uploads", express.static("uploads"));
+// Set the Content Security Policy header
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 //allow requests from all servers
 app.use(
@@ -308,6 +311,7 @@ app.get("/api/pharmacy/prescriptions/:id", async (request, response) => {
   let userId = request.params.id;
   // console.log(userId);
   let pres = await getPharmacyPrescriptions(userId);
+  console.log(pres);
   response.json(pres); //send JSON object with appropriate JSON headers
 });
 
@@ -427,12 +431,13 @@ async function getPharmacyPrescriptions(id) {
   db = await connection(); //await result of connection() and store the returned db
   const userId = new ObjectId(id);
   var results = db.collection("prescriptions"); //{} as the query means no filter, so select all
+
   const combinedData = await results.aggregate([
-    { $match: { pharmacyId: userId } },
+    { $match: { pharmacy_id: userId } }, // changed pharmacyId to pharmacy_id
     {
       $lookup: {
         from: "users",
-        localField: "doctorId",
+        localField: "doctor_id", // changed doctorId to doctor_id
         foreignField: "_id",
         as: "doctor",
       },
@@ -441,7 +446,7 @@ async function getPharmacyPrescriptions(id) {
     {
       $lookup: {
         from: "deliveryStatus",
-        localField: "deliveryStatus",
+        localField: "delivery_status",
         foreignField: "_id",
         as: "status",
       },
@@ -450,18 +455,19 @@ async function getPharmacyPrescriptions(id) {
     {
       $project: {
         _id: 1,
-        doctorId: 1,
+        doctor_id: 1, //
         "doctor.firstname": 1,
         "doctor.lastname": 1,
         prescription_file: 1,
         "status.status": 1,
-        pharmacyId: 1,
+        pharmacy_id: 1, //
         created: 1,
       },
     },
   ]);
 
   const res = await combinedData.toArray();
+  console.log("results", res);
   return res;
 }
 
