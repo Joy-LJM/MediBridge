@@ -21,7 +21,8 @@ function App() {
     localStorage.clear("userInfo");
     navigate("/");
   };
-  const userInfo = localStorage.getItem("userInfo");
+  const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+  
   useEffect(() => {
     if (userInfo) {
       setIsLogin(true);
@@ -72,7 +73,7 @@ function App() {
   return (
     <>
     <ToastContainer/>
-      <Header isLogin={isLogin} handleLogout={handleLogout} />
+      <Header isLogin={isLogin} handleLogout={handleLogout} userInfo={userInfo}/>
       <Navigation isLogin={isLogin} />
       <Routes>
         {ROUTES.map(({path,element})=> <Route key={path} path={path} element={element} />)}

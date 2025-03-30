@@ -94,7 +94,7 @@ const PatientDashboard = () => {
         }
       })
       .catch((err) => {
-        console.log(err, "eee");
+        console.log(err, "add comment error");
       });
   }, [commentData]);
 

@@ -19,6 +19,9 @@ sgMail.setApiKey(process.env.API_KEY);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); //need this line to be able to receive/parse JSON from request
+// app.use("/uploads", express.static("uploads"));
+// Set the Content Security Policy header
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 //allow requests from all servers
 app.use(
@@ -143,15 +146,43 @@ app.post("/verify", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
   db = await connection();
-  const user = await db.collection("users").findOne({ email });
-
-  if (!user) {
-    return res.json({ code: 0, message: "Invalid username !" });
+  const user = await db
+    .collection("users")
+    .aggregate([
+      { $match: { email } },
+      {
+        $lookup: {
+          from: "provinces",
+          localField: "province",
+          foreignField: "_id",
+          as: "provinceDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "cities",
+          localField: "city",
+          foreignField: "_id",
+          as: "cityDetails",
+        },
+      },
+      {
+        $unwind: { path: "$provinceDetails", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $unwind: { path: "$cityDetails", preserveNullAndEmptyArrays: true },
+      },
+    ])
+    .toArray(); // FIXED: Convert cursor to array
+  if (!user.length) {
+    return res.json({ code: 0, message: "Invalid username!" });
   }
-  console.log(user, "user");
+
+  const userData = user[0] || {};
+  console.log(userData, "userData");
   // To check a password:
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-  if (!user.password || !isPasswordValid) {
+  const isPasswordValid = await bcrypt.compare(password, userData.password);
+  if (!userData.password || !isPasswordValid) {
     return res.json({ code: 0, message: "Invalid password !" });
   }
 
@@ -159,10 +190,15 @@ app.post("/login", async (req, res) => {
     code: 1,
     message: "Login successful",
     user: {
-      username: user.username,
-      email: user.email,
-      id: user._id,
-      account: user.account,
+      firstname: userData.firstname,
+      lastname: userData.lastname,
+      email: userData.email,
+      id: userData._id,
+      account: userData.account,
+      address: userData.address,
+      province: userData.province,
+      phone: userData.phone,
+      city: userData.city,
     },
   });
 });
@@ -275,6 +311,7 @@ app.get("/api/pharmacy/prescriptions/:id", async (request, response) => {
   let userId = request.params.id;
   // console.log(userId);
   let pres = await getPharmacyPrescriptions(userId);
+  console.log(pres);
   response.json(pres); //send JSON object with appropriate JSON headers
 });
 
@@ -394,12 +431,13 @@ async function getPharmacyPrescriptions(id) {
   db = await connection(); //await result of connection() and store the returned db
   const userId = new ObjectId(id);
   var results = db.collection("prescriptions"); //{} as the query means no filter, so select all
+
   const combinedData = await results.aggregate([
-    { $match: { pharmacyId: userId } },
+    { $match: { pharmacy_id: userId } }, // changed pharmacyId to pharmacy_id
     {
       $lookup: {
         from: "users",
-        localField: "doctorId",
+        localField: "doctor_id", // changed doctorId to doctor_id
         foreignField: "_id",
         as: "doctor",
       },
@@ -408,7 +446,7 @@ async function getPharmacyPrescriptions(id) {
     {
       $lookup: {
         from: "deliveryStatus",
-        localField: "deliveryStatus",
+        localField: "delivery_status",
         foreignField: "_id",
         as: "status",
       },
@@ -417,18 +455,19 @@ async function getPharmacyPrescriptions(id) {
     {
       $project: {
         _id: 1,
-        doctorId: 1,
+        doctor_id: 1, //
         "doctor.firstname": 1,
         "doctor.lastname": 1,
         prescription_file: 1,
         "status.status": 1,
-        pharmacyId: 1,
+        pharmacy_id: 1, //
         created: 1,
       },
     },
   ]);
 
   const res = await combinedData.toArray();
+  console.log("results", res);
   return res;
 }
 
@@ -638,23 +677,25 @@ app.get("/prescription/province/:province", async (req, res, next) => {
     next(err);
   }
 });
+
 app.post("/prescription/addPatient", async (req, res, next) => {
   try {
     const data = req.body || {};
     const { email } = data;
-    const hasPsw = await bcrypt.hash(userData.password, 12);
+    const initialPsw = "123456";
+    const hasPsw = await bcrypt.hash(initialPsw, 12);
     db = await connection();
     db.collection("users")
       .insertOne({ ...data, password: hasPsw })
       .then(async () => {
-        // send email to user
         // Send verification email
+        const websiteUrl = "http://localhost:5173/";
         const emailData = {
           to: email,
           from: "hathaonhin@gmail.com",
           subject: "Welcome to MediBridge!",
           text: `Your MediBridge account is registered successfully. `,
-          html: `<p>Your MediBridge account is registered successfully. Your initial password is: <strong>123456</strong>, please update your password later.</p>`,
+          html: `<p>Your MediBridge account is registered successfully. Your initial password is: <strong>${initialPsw}</strong>, please update your password via ${websiteUrl}.</p>`,
         };
 
         await sgMail.send(emailData);
@@ -748,17 +789,12 @@ const uploadDir = path.join(__dirname, "uploads");
 
 app.get("/prescription/:id/download", async (req, res, next) => {
   try {
-    console.log(2222);
-
     const id = req.params.id;
-    console.log(id, "lllll");
     const db = await connection();
 
     db.collection("prescriptions")
       .findOne({ _id: new ObjectId(id) })
       .then((prescription) => {
-        console.log(prescription, "prescription");
-
         if (!prescription) {
           return res.status(404).send({ message: "Prescription not found" });
         }
@@ -767,7 +803,6 @@ app.get("/prescription/:id/download", async (req, res, next) => {
           prescription.prescription_file.filename
         );
         res.download(filePath, prescription.prescription_file.originalname);
-        console.log(prescription, "result");
       })
       .catch((err) => {
         console.log(err);
@@ -776,6 +811,49 @@ app.get("/prescription/:id/download", async (req, res, next) => {
   } catch (err) {
     console.log(err);
     next(err);
+  }
+});
+app.post("/user/:id/update", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+
+    db = await connection();
+    const user = await db
+      .collection("users")
+      .updateOne({ _id: new ObjectId(id) }, { $set: data });
+    if (user.modifiedCount === 0) {
+      return res.json({ code: 0, message: "Information update failed!" });
+    }
+
+    res.json({
+      code: 1,
+      message: "Information update successfully.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ code: 0, message: "Internal server error." });
+  }
+});
+app.get("/user/:id/delete", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    db = await connection();
+    const user = await db
+      .collection("users")
+      .deleteOne({ _id: new ObjectId(id) });
+    if (user.deletedCount === 0) {
+      return res.json({ code: 0, message: "Account deletion failed!" });
+    }
+
+    res.json({
+      code: 1,
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ code: 0, message: "Internal server error." });
   }
 });
 // MongoDB functions
