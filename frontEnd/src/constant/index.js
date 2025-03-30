@@ -20,7 +20,7 @@ const SUBMIT_PRESCRIPTION = `${HOST_URL}/prescription/submit`;
 const ADD_PATIENT = `${HOST_URL}/prescription/addPatient`;
 const FETCH_PROVINCES = `${HOST_URL}/api/provinces`;
 const FETCH_CITIES = `${HOST_URL}/api/cities`;
-const PATIENT_ORDERS = `${HOST_URL}/patient/orders`;
+const USER_ORDERS = `${HOST_URL}/user/orders`;
 const ADD_REVIEWS = `${HOST_URL}/patient/addReview`;
 const USER_ACTION = `${HOST_URL}/user`;
 
@@ -47,7 +47,7 @@ export {
   EMAIL_REGEX,
   FETCH_PROVINCES,
   FETCH_CITIES,
-  PATIENT_ORDERS,
+  USER_ORDERS,
   ADD_REVIEWS,
   USER_ACTION,
 };

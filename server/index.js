@@ -708,9 +708,9 @@ app.post("/prescription/addPatient", async (req, res, next) => {
   }
 });
 // patient dashboard
-app.get("/patient/orders", async (req, res, next) => {
+app.get("/user/orders", async (req, res, next) => {
   try {
-    const { userId } = req.query;
+    const { userId, idType } = req.query;
     console.log(userId, "userId");
 
     db = await connection();
@@ -718,7 +718,7 @@ app.get("/patient/orders", async (req, res, next) => {
       .collection("prescriptions")
       .aggregate([
         {
-          $match: { patient_id: new ObjectId(userId) },
+          $match: { [idType]: new ObjectId(userId) },
         },
         {
           $lookup: {
@@ -857,65 +857,39 @@ app.get("/user/:id/delete", async (req, res) => {
     res.status(500).json({ code: 0, message: "Internal server error." });
   }
 });
-// shipper dashboard
-app.get("/shipper/orders", async (req, res, next) => {
+app.get("/prescription/:id/view", async (req, res, next) => {
   try {
-    const { userId } = req.query;
-    console.log(userId, "userId");
+    const id = req.params.id;
+    const db = await connection();
 
-    db = await connection();
-    var results = await db
-      .collection("prescriptions")
-      .aggregate([
-        {
-          $match: { patient_id: new ObjectId(userId) },
-        },
-        {
-          $lookup: {
-            from: "deliveryStatus",
-            let: { delivery_status: "$delivery_status" }, //defining a variable called delivery_status and assigning it the value of the delivery_status field from the prescriptions collection
-            pipeline: [
-              //define a series of aggregation stages that will be executed in order
-              {
-                $match: {
-                  $expr: {
-                    //$expr evaluate an expression that checks if the _id field of the current document in the deliveryStatus collection is equal to the delivery_status variable we defined earlier.
-                    $eq: ["$_id", { $toObjectId: "$$delivery_status" }], //converts the delivery_status variable to an ObjectId.
-                  },
-                },
-              },
-              {
-                $project: {
-                  //transform documents by adding or removing fields.
-                  _id: 0, //removing the _id field
-                  status: 1, //keep status field
-                },
-              },
-            ],
-            as: "delivery_status_value",
-          },
-        },
-        {
-          $addFields: {
-            delivery_status_value: {
-              $arrayElemAt: ["$delivery_status_value.status", 0], //extract the first element of the status array and assign to the new field delivery_status_value
-            },
-          },
-        },
-        {
-          $sort: {
-            //sorts the results by the uploaded_date field in descending order
-            uploaded_date: -1,
-          },
-        },
-      ])
-      .toArray();
-    console.log(results, "results");
-    return res.json(results);
+    db.collection("prescriptions")
+      .findOne({ _id: new ObjectId(id) })
+      .then((prescription) => {
+        console.log(prescription, "prescription");
+
+        if (!prescription) {
+          return res.status(404).send({ message: "Prescription not found" });
+        }
+        const filePath = path.join(
+          __dirname,
+          "uploads",
+          prescription.prescription_file.filename
+        );
+        // Set the appropriate Content-Type for display
+        res.setHeader("Content-Type", prescription.prescription_file.mimetype);
+        // Send file for inline viewing
+        res.sendFile(filePath);
+      })
+      .catch((err) => {
+        console.log(err);
+        next(err);
+      });
   } catch (err) {
+    console.log(err);
     next(err);
   }
 });
+
 // MongoDB functions
 async function connection() {
   await client.connect();

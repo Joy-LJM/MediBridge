@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -16,6 +16,7 @@ import "../styles/Pharmacy.css";
 import TabContent from "../components/TabContent";
 import axios from "axios";
 import { HOST_URL } from "../constant";
+import { createURLDownloadFile } from "../utils";
 
 export default function PharmacyDashboard() {
   const [prescriptions, setPrescriptions] = useState([]);
@@ -48,8 +49,8 @@ export default function PharmacyDashboard() {
     }
   }, []);
 
-  const handlePdfClick = (pdfFile) => {
-    setSelectedPdf(pdfFile); // Set the clicked PDF file
+  const handlePdfClick = (id) => {
+    setSelectedPdf(id); // Set the clicked PDF file
     setOpenModal(true); // Open the modal
   };
 
@@ -88,6 +89,16 @@ export default function PharmacyDashboard() {
       console.error("Error:", error);
     }
   };
+
+  const downloadPres = useCallback(async () => {
+    const res = await axios.get(
+      `${HOST_URL}/prescription/${selectedPdf}/download`,
+      {
+        responseType: "blob",
+      }
+    );
+    createURLDownloadFile(res.data, selectedPdf);
+  }, [selectedPdf]);
 
   return (
     <>
@@ -139,9 +150,7 @@ export default function PharmacyDashboard() {
                       >
                         Prescription : {/* Clickable PDF to open in modal */}
                         <Button
-                          onClick={() =>
-                            handlePdfClick(pres.prescription_file.filename)
-                          }
+                          onClick={() => handlePdfClick(pres._id)}
                           variant="contained"
                           color="primary"
                         >
@@ -177,7 +186,7 @@ export default function PharmacyDashboard() {
                       </Typography>
 
                       <Box>
-                        {pres.status.status === "New" ? (
+                        {pres.status?.status === "New" ? (
                           <Grid>
                             <Button
                               onClick={() => handleButton(pres._id, "accept")}
@@ -220,7 +229,7 @@ export default function PharmacyDashboard() {
                               Decline
                             </Button>
                           </Grid>
-                        ) : pres.status.status === "Declined" ? (
+                        ) : pres.status?.status === "Declined" ? (
                           <Button
                             variant="contained"
                             sx={{
@@ -238,7 +247,7 @@ export default function PharmacyDashboard() {
                           >
                             Order Declined
                           </Button>
-                        ) : pres.status.status === "Preparing" ? (
+                        ) : pres.status?.status === "Preparing" ? (
                           <Button
                             variant="contained"
                             sx={{
@@ -258,7 +267,7 @@ export default function PharmacyDashboard() {
                           >
                             Ready To Delivery
                           </Button>
-                        ) : pres.status.status === "Pending" ? (
+                        ) : pres.status?.status === "Pending" ? (
                           <Button
                             variant="contained"
                             sx={{
@@ -276,7 +285,7 @@ export default function PharmacyDashboard() {
                           >
                             Wait for Shipper's Acceptance
                           </Button>
-                        ) : pres.status.status === "Accepted" ? (
+                        ) : pres.status?.status === "Accepted" ? (
                           <Button
                             variant="contained"
                             sx={{
@@ -296,7 +305,7 @@ export default function PharmacyDashboard() {
                           >
                             Delivered To Shipper
                           </Button>
-                        ) : pres.status.status === "Delivering" ? (
+                        ) : pres.status?.status === "Delivering" ? (
                           <Button
                             variant="contained"
                             sx={{
@@ -350,25 +359,18 @@ export default function PharmacyDashboard() {
         fullWidth
       >
         <DialogContent>
-          {/* Embed the PDF inside the modal */}
-          <embed
-            src={`${HOST_URL}/uploads/${selectedPdf}`}
+          <iframe
+            src={`${HOST_URL}/prescription/${selectedPdf}/view`}
             width="100%"
             height="600px"
-            type="application/pdf"
-          />
+          ></iframe>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseModal} color="primary">
             Close
           </Button>
           {/* Download button for explicit download action */}
-          <Button
-            variant="contained"
-            color="secondary"
-            href={`${HOST_URL}/uploads/${selectedPdf}`}
-            download
-          >
+          <Button variant="contained" color="secondary" onClick={downloadPres}>
             Download PDF
           </Button>
         </DialogActions>

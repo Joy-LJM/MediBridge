@@ -26,7 +26,7 @@ import moment from "moment";
 import {
   ADD_REVIEWS,
   HOST_URL,
-  PATIENT_ORDERS,
+  USER_ORDERS,
   SUCCESS_CODE,
 } from "../constant";
 import TabContent from "../components/TabContent";
@@ -63,8 +63,8 @@ const PatientDashboard = () => {
   const fetchOrders = async () => {
     try {
       const { id } = JSON.parse(localStorage.getItem("userInfo"));
-      const { data } = await axios.get(PATIENT_ORDERS, {
-        params: { userId: id },
+      const { data } = await axios.get(USER_ORDERS, {
+        params: { userId: id ,idType:"patient_id"},
       });
       setOrders(data);
     } catch (error) {
