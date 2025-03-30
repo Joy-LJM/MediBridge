@@ -28,6 +28,7 @@ import {
   GET_PATIENT_LIST,
   ORDER_STATUS_MAP,
   PHONE_REGEX,
+  POSTCODE_REGEX,
   SUBMIT_PRESCRIPTION,
   SUCCESS_CODE,
 } from "../constant";
@@ -39,6 +40,7 @@ const formErr = {
   phoneNumErr: "",
   addressErr: "",
   emailErr: "",
+  postCodeErr: "",
 };
 const patientInitials = {
   firstname: "",
@@ -49,6 +51,7 @@ const patientInitials = {
   account: "67b270a10a93bde65f142af3",
   city: "",
   province: "",
+  postCode: "",
 };
 const formInitials = {
   files: null,
@@ -150,8 +153,16 @@ export default function DoctorDashboard() {
   }, [formData]);
 
   const handleAddPatient = useCallback(async () => {
-    const { firstname, lastname, phone, address, email, province, city } =
-      patientData || {};
+    const {
+      firstname,
+      lastname,
+      phone,
+      address,
+      email,
+      province,
+      city,
+      postCode,
+    } = patientData || {};
     let newErrors = {
       firstnameErr: "",
       lastnameErr: "",
@@ -198,6 +209,11 @@ export default function DoctorDashboard() {
     } else {
       newErrors.emailErr = "";
     }
+    if (!postCode) {
+      newErrors.postCodeErr = "Please input email!";
+    } else {
+      newErrors.postCodeErr = "";
+    }
     if (!PHONE_REGEX.test(phone)) {
       newErrors.phoneNumErr = "Incorrect phone number format!";
     } else {
@@ -207,6 +223,11 @@ export default function DoctorDashboard() {
       newErrors.emailErr = "Incorrect email format!";
     } else {
       newErrors.emailErr = "";
+    }
+    if (!POSTCODE_REGEX.test(postCode)) {
+      newErrors.postCodeErr = "Incorrect postcode format!";
+    } else {
+      newErrors.postCodeErr = "";
     }
 
     setPatientFormError(newErrors); // ✅ Set all errors in one state update
@@ -231,11 +252,11 @@ export default function DoctorDashboard() {
           const { name: provinceName } = pronviceList.find(
             (item) => item._id === province
           );
-          if(error.patientErr){
+          if (error.patientErr) {
             setError({
               ...error,
-              patientErr:""
-            })
+              patientErr: "",
+            });
           }
           setFormData({
             ...formData,
@@ -253,7 +274,7 @@ export default function DoctorDashboard() {
     (e) => {
       setFormData({
         ...formData,
-        selectedPharmacy: e?.target?.value??"",
+        selectedPharmacy: e?.target?.value ?? "",
       });
     },
     [formData]
@@ -270,7 +291,6 @@ export default function DoctorDashboard() {
 
   const [patientList, setPatientList] = useState([]);
   useEffect(() => {
-    
     axios.get(GET_PATIENT_LIST).then((res) => {
       const { data } = res || {};
       setPatientList(data.patientList);
@@ -315,7 +335,7 @@ export default function DoctorDashboard() {
     // <FormControl required>
     <>
       <TabContent label="Upload Prescription">
-        <Grid2 container spacing={2} >
+        <Grid2 container spacing={2}>
           <Grid2 size={4}>
             <label>Upload Prescription:</label>
           </Grid2>
@@ -433,11 +453,11 @@ export default function DoctorDashboard() {
             />
           </Grid2>
         </Grid2>
-       <Grid2 size={12} marginTop={4}>
-       <Button color="success" variant="contained" onClick={handleSubmit}>
-          Submit
-        </Button>
-       </Grid2>
+        <Grid2 size={12} marginTop={4}>
+          <Button color="success" variant="contained" onClick={handleSubmit}>
+            Submit
+          </Button>
+        </Grid2>
       </TabContent>
       <Dialog
         open={open}
@@ -610,23 +630,14 @@ export default function DoctorDashboard() {
                     {patientFormError.provinceErr}
                   </FormHelperText>
                 </FormControl>
-
-                {/* Fixed Select Dropdown */}
-                <FormControl sx={{ marginBottom: "30px" }}>
-                  <InputLabel
-                    id="age-label"
-                    // sx={{ "&.Mui-focused ": { color: "#fff" }, color: "#fff" }}
-                  >
-                    City
-                  </InputLabel>
+                <FormControl>
+                  <InputLabel id="age-label">City</InputLabel>
                   <Select
                     labelId="age-label"
                     id="age"
                     label="City"
                     value={patientData.city}
                     onChange={(e) => {
-                      console.log(e, "eeeee");
-
                       setPatientData({
                         ...patientData,
                         city: e.target.value,
@@ -652,6 +663,30 @@ export default function DoctorDashboard() {
                     {patientFormError.cityErr}
                   </FormHelperText>
                 </FormControl>
+                <TextField
+                  id="postCode"
+                  label="Postal Code"
+                  type="text"
+                  value={patientData.postCode}
+                  sx={{
+                    marginBottom: "10px",
+                    "& .MuiOutlinedInput-root": {
+                      "&:hover fieldset": { borderColor: "#689D6D" },
+                    },
+                  }}
+                  onChange={(e) => {
+                    setPatientData({
+                      ...patientData,
+                      postCode: e.target.value.toUpperCase(),
+                    });
+                  }}
+                />
+                <FormHelperText
+                  className="textErr"
+                  error={!!patientFormError.postCodeErr}
+                >
+                  {patientFormError.postCodeErr}
+                </FormHelperText>
               </FormControl>
             </form>
           </Box>

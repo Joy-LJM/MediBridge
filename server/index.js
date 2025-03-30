@@ -518,8 +518,7 @@ async function updateStatus(id, statusId) {
 
 /**END FUNCTION TO ADD DATA */
 
-// dashboard routes
-
+// doctor dashboard routes
 const upload = multer({ dest: "uploads/" });
 app.post(
   "/prescription/submit",
@@ -555,7 +554,6 @@ app.post(
     }
   }
 );
-
 app.get("/prescription/patient", async (req, res, next) => {
   try {
     db = await connection();
@@ -576,6 +574,7 @@ app.get("/prescription/patient", async (req, res, next) => {
           address,
           city,
           province,
+          postCode,
         }) => {
           const [cityData, provinceData] = await Promise.all([
             db.collection("cities").findOne({ _id: new ObjectId(city) }),
@@ -590,7 +589,7 @@ app.get("/prescription/patient", async (req, res, next) => {
             email,
             address: `${address}${cityData ? "," + cityData.name : ""}${
               provinceData ? "," + provinceData.name : ""
-            }`,
+            },${postCode}`,
           };
         }
       )
@@ -708,9 +707,10 @@ app.post("/prescription/addPatient", async (req, res, next) => {
     next(err);
   }
 });
-app.get("/patient/orders", async (req, res, next) => {
+// patient dashboard
+app.get("/user/orders", async (req, res, next) => {
   try {
-    const { userId } = req.query;
+    const { userId, idType } = req.query;
     console.log(userId, "userId");
 
     db = await connection();
@@ -718,7 +718,7 @@ app.get("/patient/orders", async (req, res, next) => {
       .collection("prescriptions")
       .aggregate([
         {
-          $match: { patient_id: new ObjectId(userId) },
+          $match: { [idType]: new ObjectId(userId) },
         },
         {
           $lookup: {
@@ -813,6 +813,7 @@ app.get("/prescription/:id/download", async (req, res, next) => {
     next(err);
   }
 });
+// uer profile
 app.post("/user/:id/update", async (req, res) => {
   try {
     const { id } = req.params;
@@ -856,6 +857,39 @@ app.get("/user/:id/delete", async (req, res) => {
     res.status(500).json({ code: 0, message: "Internal server error." });
   }
 });
+app.get("/prescription/:id/view", async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const db = await connection();
+
+    db.collection("prescriptions")
+      .findOne({ _id: new ObjectId(id) })
+      .then((prescription) => {
+        console.log(prescription, "prescription");
+
+        if (!prescription) {
+          return res.status(404).send({ message: "Prescription not found" });
+        }
+        const filePath = path.join(
+          __dirname,
+          "uploads",
+          prescription.prescription_file.filename
+        );
+        // Set the appropriate Content-Type for display
+        res.setHeader("Content-Type", prescription.prescription_file.mimetype);
+        // Send file for inline viewing
+        res.sendFile(filePath);
+      })
+      .catch((err) => {
+        console.log(err);
+        next(err);
+      });
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+});
+
 // MongoDB functions
 async function connection() {
   await client.connect();
