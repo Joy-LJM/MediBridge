@@ -56,7 +56,7 @@ export default function Login() {
 
           setTimeout(() => {
             navigate("/dashboard");
-          }, 1500);
+          }, 1000);
 
           toast.success(message);
           localStorage.setItem("userInfo", JSON.stringify(user));
