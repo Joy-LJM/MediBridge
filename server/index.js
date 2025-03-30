@@ -244,7 +244,7 @@ async function getOrders() {
       {
         $lookup: {
           from: "users",
-          localField: "pharmacyId",
+          localField: "pharmacy_id",
           foreignField: "_id",
           as: "pharmacyDetails",
         },
@@ -255,7 +255,7 @@ async function getOrders() {
       {
         $lookup: {
           from: "users",
-          localField: "patientId",
+          localField: "patient_id",
           foreignField: "_id",
           as: "patientDetails",
         },
@@ -266,7 +266,7 @@ async function getOrders() {
       {
         $lookup: {
           from: "deliveryStatus",
-          localField: "deliveryStatus",
+          localField: "delivery_status",
           foreignField: "_id",
           as: "statusDetails",
         },
