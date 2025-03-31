@@ -30,6 +30,7 @@ import {
   FETCH_CITIES,
   FETCH_PROVINCES,
   PHONE_REGEX,
+  POSTCODE_REGEX,
   RESET_PSW,
   SUCCESS_CODE,
   USER_ACTION,
@@ -87,6 +88,10 @@ export default function Header({ isLogin, handleLogout, userInfo }) {
     }
     if (editKey === "email" && !EMAIL_REGEX.test(tempValue)) {
       setDataErr("Incorrect email format!");
+      return;
+    }
+    if (editKey === "postCode" && !POSTCODE_REGEX.test(tempValue)) {
+      setDataErr("Incorrect postcode format!");
       return;
     }
     const isPassword = editKey === "password";
@@ -287,6 +292,12 @@ export default function Header({ isLogin, handleLogout, userInfo }) {
                     key: "city",
                     label: "City",
                     options: cityList,
+                  },
+                  {
+                    value: formData?.postCode??"",
+                    type: "input",
+                    key: "postCode",
+                    label: "Postal Code",
                   },
                 ].map((item) => {
                   const { value, key, label, type, options } = item;

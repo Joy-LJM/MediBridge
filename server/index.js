@@ -199,6 +199,7 @@ app.post("/login", async (req, res) => {
       province: userData.province,
       phone: userData.phone,
       city: userData.city,
+      postCode: userData.postCode,
     },
   });
 });
