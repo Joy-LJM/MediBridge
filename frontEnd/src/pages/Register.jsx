@@ -74,9 +74,8 @@ export default function Register() {
       })
       .catch((error) => console.error("Error fetching accounts:", error));
   }, []);
-  const {  userInfo}=React.useContext(UserContext)
+  const { userInfo } = React.useContext(UserContext);
   React.useEffect(() => {
-
     if (userInfo) {
       navigate("/dashboard");
     }
@@ -319,13 +318,11 @@ export default function Register() {
                   }}
                 >
                   {selectedProvince ? (
-                    <>
-                      {cities.map((city) => (
-                        <MenuItem key={city._id} value={city._id}>
-                          {city.name}
-                        </MenuItem>
-                      ))}
-                    </>
+                    cities.map((city) => (
+                      <MenuItem key={city._id} value={city._id}>
+                        {city.name}
+                      </MenuItem>
+                    ))
                   ) : (
                     <MenuItem value="">Choose a Province first</MenuItem>
                   )}
