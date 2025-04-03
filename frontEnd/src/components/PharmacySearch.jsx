@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import axios from "axios";
 import {
   TextField,
   Button,
@@ -11,6 +10,7 @@ import {
 import PropTypes from "prop-types";
 import { toast } from "react-toastify";
 import { GET_PHARMACY_LIST, HOST_URL } from "../constant";
+import axios from "axios";
 
 const PharmacySearch = ({
   setPharmacies,
@@ -103,6 +103,9 @@ const PharmacySearch = ({
               return getCoordinates(joinAddr, rest);
             } catch (error) {
               console.error("Error fetching city/province data:", error);
+              toast.error("Fetch pharmacy data failed!");
+
+              setLoading(false);
               return null;
             }
           })
@@ -129,6 +132,8 @@ const PharmacySearch = ({
       }
     } catch (error) {
       console.error("Error fetching city/province data:", error);
+      toast.error("Fetch pharmacy data failed!");
+      setLoading(false)
       return null;
     }
   }, [address, setPharmacies]);

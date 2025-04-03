@@ -4,10 +4,14 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
 const multer = require("multer");
+
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 dotenv.config();
 
 const cors = require("cors"); //need this to set this API to allow requests from other servers
 const { MongoClient, ObjectId } = require("mongodb");
+const authMiddleware = require("./middleware/authMiddleware");
 
 const app = express();
 const port = process.env.PORT || "3000";
@@ -16,6 +20,7 @@ const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${proc
 // const dbUrl = "mongodb://localhost:27017/mediBridge"; //default port is 27017
 const client = new MongoClient(dbUrl);
 sgMail.setApiKey(process.env.API_KEY);
+app.use(cookieParser());
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); //need this line to be able to receive/parse JSON from request
@@ -144,67 +149,125 @@ app.post("/verify", async (req, res) => {
 });
 
 app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-  db = await connection();
-  const user = await db
-    .collection("users")
-    .aggregate([
-      { $match: { email } },
-      {
-        $lookup: {
-          from: "provinces",
-          localField: "province",
-          foreignField: "_id",
-          as: "provinceDetails",
+  try {
+    const { email, password } = req.body;
+    db = await connection();
+    const user = await db
+      .collection("users")
+      .aggregate([
+        { $match: { email } },
+        {
+          $lookup: {
+            from: "provinces",
+            localField: "province",
+            foreignField: "_id",
+            as: "provinceDetails",
+          },
         },
-      },
-      {
-        $lookup: {
-          from: "cities",
-          localField: "city",
-          foreignField: "_id",
-          as: "cityDetails",
+        {
+          $lookup: {
+            from: "cities",
+            localField: "city",
+            foreignField: "_id",
+            as: "cityDetails",
+          },
         },
-      },
-      {
-        $unwind: { path: "$provinceDetails", preserveNullAndEmptyArrays: true },
-      },
-      {
-        $unwind: { path: "$cityDetails", preserveNullAndEmptyArrays: true },
-      },
-    ])
-    .toArray(); // FIXED: Convert cursor to array
-  if (!user.length) {
-    return res.json({ code: 0, message: "Invalid username!" });
-  }
+        {
+          $unwind: {
+            path: "$provinceDetails",
+            preserveNullAndEmptyArrays: true,
+          },
+        },
+        {
+          $unwind: { path: "$cityDetails", preserveNullAndEmptyArrays: true },
+        },
+      ])
+      .toArray(); // FIXED: Convert cursor to array
+    if (!user.length) {
+      return res.json({ code: 0, message: "Invalid username!" });
+    }
 
-  const userData = user[0] || {};
-  console.log(userData, "userData");
-  // To check a password:
-  const isPasswordValid = await bcrypt.compare(password, userData.password);
-  if (!userData.password || !isPasswordValid) {
-    return res.json({ code: 0, message: "Invalid password !" });
-  }
+    const userData = user[0] || {};
+    console.log(userData, "userData");
+    // To check a password:
+    const isPasswordValid = await bcrypt.compare(password, userData.password);
+    if (!userData.password || !isPasswordValid) {
+      return res.json({ code: 0, message: "Invalid password !" });
+    }
+    const token = jwt.sign(
+      { email, userId: userData._id },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "1d" }
+    );
+    // Set cookie with the token
+    res.cookie("token", token, {
+      httpOnly: true, //  Prevents XSS attacks
+      secure: process.env.NODE_ENV === "production", //  Secure in production
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000, //  1 day
+      path: "/", //  Ensures cookie is sent on all requests
+    });
 
-  res.json({
-    code: 1,
-    message: "Login successful",
-    user: {
-      firstname: userData.firstname,
-      lastname: userData.lastname,
-      email: userData.email,
-      id: userData._id,
-      account: userData.account,
-      address: userData.address,
-      province: userData.province,
-      phone: userData.phone,
-      city: userData.city,
-    },
-  });
+    res.json({
+      code: 1,
+      message: "Login successful",
+      user: {
+        firstname: userData.firstname,
+        lastname: userData.lastname,
+        email: userData.email,
+        id: userData._id,
+        account: userData.account,
+        address: userData.address,
+        province: userData.province,
+        phone: userData.phone,
+        city: userData.city,
+      },
+    });
+  } catch (err) {
+    console.log(err, "Login error");
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+// Verify User Session (Check JWT in Cookie)
+app.get("/session", async (req, res) => {
+  try {
+    const token = req.cookies.token;
+    if (!token) return res.status(401).json({ message: "Not authenticated" });
+
+    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const db = await connection();
+    const user = await db
+      .collection("users")
+      .findOne({ _id: new ObjectId(decoded.userId) });
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    res.json({
+      user: {
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        id: user._id,
+        account: user.account,
+        address: user.address,
+        province: user.province,
+        phone: user.phone,
+        city: user.city,
+      },
+    });
+  } catch (error) {
+    console.error("Session error:", error);
+    res.status(403).json({ message: "Invalid token" });
+  }
+});
+
+app.post("/logout", (req, res) => {
+  res.clearCookie("token");
+  res.json({ message: "Logged out successfully" });
 });
 
 let validateCode = {};
-app.post("/validateEmail", async (req, res) => {
+app.post("/validateEmail", authMiddleware, async (req, res) => {
   const { email } = req.body;
   db = await connection();
   const user = await db.collection("users").findOne({ email });
@@ -264,7 +327,7 @@ app.post("/validateCode", async (req, res) => {
     message: "Valid verification code",
   });
 });
-app.post("/resetPsw", async (req, res) => {
+app.post("/resetPsw", authMiddleware, async (req, res) => {
   try {
     const { _id, password } = req.body;
 
@@ -307,28 +370,36 @@ app.get("/api/accounts", async (request, response) => {
 
 /** START OF PHARMACY SECTION */
 // Return list of precriptions in pharmacy dashboard
-app.get("/api/pharmacy/prescriptions/:id", async (request, response) => {
-  let userId = request.params.id;
-  // console.log(userId);
-  let pres = await getPharmacyPrescriptions(userId);
-  console.log(pres);
-  response.json(pres); //send JSON object with appropriate JSON headers
-});
+app.get(
+  "/api/pharmacy/prescriptions/:id",
+  authMiddleware,
+  async (request, response) => {
+    let userId = request.params.id;
+    // console.log(userId);
+    let pres = await getPharmacyPrescriptions(userId);
+    console.log(pres);
+    response.json(pres); //send JSON object with appropriate JSON headers
+  }
+);
 
 //Update status of prescription
-app.put("/api/pharmacy/prescription/update/:id", async (req, res) => {
-  let preId = req.params.id;
-  let { deliveryStatus } = req.body;
+app.put(
+  "/api/pharmacy/prescription/update/:id",
+  authMiddleware,
+  async (req, res) => {
+    let preId = req.params.id;
+    let { deliveryStatus } = req.body;
 
-  const statusId = await getStatusId(deliveryStatus);
-  const result = await updateStatus(preId, statusId);
+    const statusId = await getStatusId(deliveryStatus);
+    const result = await updateStatus(preId, statusId);
 
-  // Respond with appropriate status and message
-  res.status(result.status).json({
-    status: result.status === 200 ? "success" : "error",
-    message: result.message,
-  });
-});
+    // Respond with appropriate status and message
+    res.status(result.status).json({
+      status: result.status === 200 ? "success" : "error",
+      message: result.message,
+    });
+  }
+);
 
 /**END PHARMACY SECTION */
 
@@ -522,6 +593,7 @@ async function updateStatus(id, statusId) {
 const upload = multer({ dest: "uploads/" });
 app.post(
   "/prescription/submit",
+  authMiddleware,
   upload.single("prescription_file"),
   async (req, res, next) => {
     try {
@@ -554,7 +626,7 @@ app.post(
     }
   }
 );
-app.get("/prescription/patient", async (req, res, next) => {
+app.get("/prescription/patient", authMiddleware, async (req, res, next) => {
   try {
     db = await connection();
 
@@ -677,7 +749,7 @@ app.get("/prescription/province/:province", async (req, res, next) => {
   }
 });
 
-app.post("/prescription/addPatient", async (req, res, next) => {
+app.post("/prescription/addPatient", authMiddleware, async (req, res, next) => {
   try {
     const data = req.body || {};
     const { email } = data;
@@ -708,7 +780,7 @@ app.post("/prescription/addPatient", async (req, res, next) => {
   }
 });
 // patient dashboard
-app.get("/user/orders", async (req, res, next) => {
+app.get("/user/orders", authMiddleware, async (req, res, next) => {
   try {
     const { userId, idType } = req.query;
     console.log(userId, "userId");
@@ -787,34 +859,38 @@ app.post("/patient/addReview", async (req, res, next) => {
 });
 const uploadDir = path.join(__dirname, "uploads");
 
-app.get("/prescription/:id/download", async (req, res, next) => {
-  try {
-    const id = req.params.id;
-    const db = await connection();
+app.get(
+  "/prescription/:id/download",
+  authMiddleware,
+  async (req, res, next) => {
+    try {
+      const id = req.params.id;
+      const db = await connection();
 
-    db.collection("prescriptions")
-      .findOne({ _id: new ObjectId(id) })
-      .then((prescription) => {
-        if (!prescription) {
-          return res.status(404).send({ message: "Prescription not found" });
-        }
-        const filePath = path.join(
-          uploadDir,
-          prescription.prescription_file.filename
-        );
-        res.download(filePath, prescription.prescription_file.originalname);
-      })
-      .catch((err) => {
-        console.log(err);
-        next(err);
-      });
-  } catch (err) {
-    console.log(err);
-    next(err);
+      db.collection("prescriptions")
+        .findOne({ _id: new ObjectId(id) })
+        .then((prescription) => {
+          if (!prescription) {
+            return res.status(404).send({ message: "Prescription not found" });
+          }
+          const filePath = path.join(
+            uploadDir,
+            prescription.prescription_file.filename
+          );
+          res.download(filePath, prescription.prescription_file.originalname);
+        })
+        .catch((err) => {
+          console.log(err);
+          next(err);
+        });
+    } catch (err) {
+      console.log(err);
+      next(err);
+    }
   }
-});
+);
 // uer profile
-app.post("/user/:id/update", async (req, res) => {
+app.post("/user/:id/update", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const data = req.body;
@@ -836,16 +912,26 @@ app.post("/user/:id/update", async (req, res) => {
     res.status(500).json({ code: 0, message: "Internal server error." });
   }
 });
-app.get("/user/:id/delete", async (req, res) => {
+app.delete("/user/:id/delete", authMiddleware, async (req, res) => {
   try {
+    //  Convert ID properly
     const { id } = req.params;
+    let objectId;
+    try {
+      objectId = new ObjectId(id);
+    } catch (err) {
+      return res
+        .status(400)
+        .json({ code: 0, message: "Invalid user ID format" });
+    }
 
     db = await connection();
-    const user = await db
-      .collection("users")
-      .deleteOne({ _id: new ObjectId(id) });
+    const user = await db.collection("users").deleteOne({ _id: objectId });
+
     if (user.deletedCount === 0) {
-      return res.json({ code: 0, message: "Account deletion failed!" });
+      return res
+        .status(404)
+        .json({ code: 0, message: "User not found or already deleted" });
     }
 
     res.json({
@@ -854,10 +940,11 @@ app.get("/user/:id/delete", async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ code: 0, message: "Internal server error." });
+    res.status(500).json({ code: 0, message: "Internal server error" });
   }
 });
-app.get("/prescription/:id/view", async (req, res, next) => {
+
+app.get("/prescription/:id/view", authMiddleware, async (req, res, next) => {
   try {
     const id = req.params.id;
     const db = await connection();

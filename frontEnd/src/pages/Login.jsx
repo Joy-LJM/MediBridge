@@ -1,8 +1,6 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
-import { toast, ToastContainer } from "react-toastify";
+import { useState, useEffect, useCallback, useContext } from "react";
+import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-// import Footer from "../components/Footer";
 
 import {
   Typography,
@@ -13,55 +11,56 @@ import {
   Button,
 } from "@mui/material";
 import "../styles/login.css";
-import { HOST_URL, SUCCESS_CODE } from "../constant";
+import { SUCCESS_CODE } from "../constant";
+import { useAuth } from "../hooks/useAuth";
+import { UserContext } from "../../context";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
+  const { userInfo, loginUser } = useContext(UserContext);
 
+  // prevent user to navigate to login page if they are already logged in
   useEffect(() => {
-    const userInfo = localStorage.getItem("userInfo");
     if (userInfo) {
       navigate("/dashboard");
     }
-  }, [navigate]);
+  }, [navigate, userInfo]);
+  const loginMutation = useAuth();
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      if (!email || !password) {
+        toast.error("Please input your email or password before submitting!");
+        return;
+      }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!email || !password) {
-      toast.error("Please input your email or password before submit!");
-      return;
-    }
-    axios
-      .post(`${HOST_URL}/login`, {
-        email,
-        password,
-      })
-      .then((res) => {
-        const { data } = res;
-        const { code, message, user } = data;
+      try {
+        const { code, message, user } = await loginMutation.mutateAsync({
+          email,
+          password,
+        });
+
         if (code === SUCCESS_CODE) {
-          navigate("/dashboard");
-          //toast.success(message);
-          //localStorage.setItem("userInfo", JSON.stringify(user));
-          //if (res.data.code === 200) {
-          //console.log("Setting userInfo in localStorage"); // Debugging log
-          localStorage.setItem("userInfo", JSON.stringify(user));
-          setSuccessMessage("Login successful");
+          toast.success(message);
+          loginUser(user);
+
+          setTimeout(() => {
+            navigate("/dashboard");
+          }, 800);
         } else {
           toast.error(message);
         }
-      })
-      .catch((err) => {
-        toast.error(err.message);
-      });
-  };
-
+      } catch (err) {
+        toast.error(err.message || "Login failed");
+      }
+    },
+    [email, password, loginMutation, loginUser, navigate]
+  );
+  
   return (
     <>
-      <ToastContainer />
       <div className="container">
         <Container
           className="signIn"
@@ -127,7 +126,6 @@ export default function Login() {
                 </Button>
               </FormControl>
             </form>
-            {successMessage && <div>{successMessage}</div>}
           </Box>
         </Container>
       </div>

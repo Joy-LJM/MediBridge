@@ -20,6 +20,7 @@ import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
 import { POSTCODE_REGEX } from "../constant";
+import { UserContext } from "../../context";
 // import { HOST_URL } from "../constant";
 
 export default function Register() {
@@ -73,13 +74,13 @@ export default function Register() {
       })
       .catch((error) => console.error("Error fetching accounts:", error));
   }, []);
-
+  const {  userInfo}=React.useContext(UserContext)
   React.useEffect(() => {
-    const userInfo = localStorage.getItem("userInfo");
+
     if (userInfo) {
       navigate("/dashboard");
     }
-  }, [navigate]);
+  }, [navigate, userInfo]);
 
   const handleAccountChange = (event) => {
     const selectedAccountInfo = event.target.value;

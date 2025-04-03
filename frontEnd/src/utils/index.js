@@ -1,3 +1,6 @@
+import axios from "axios";
+import { HOST_URL } from "../constant";
+
 const createURLDownloadFile = (data, id) => {
   const fileUrl = URL.createObjectURL(data);
   const a = document.createElement("a");
@@ -6,4 +9,9 @@ const createURLDownloadFile = (data, id) => {
   a.click();
 };
 
-export { createURLDownloadFile };
+const API = axios.create({
+  baseURL: HOST_URL, // Your backend URL
+  withCredentials: true, // Sends cookies with requests
+});
+
+export { createURLDownloadFile, API };
