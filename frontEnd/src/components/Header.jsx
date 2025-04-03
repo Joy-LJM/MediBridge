@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useContext, useEffect } from "react";
 import { Link } from "react-router-dom";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import logo from "../assets/logo.png";
@@ -21,10 +21,7 @@ import {
 import TabContext from "@mui/lab/TabContext";
 import TabList from "@mui/lab/TabList";
 import TabPanel from "@mui/lab/TabPanel";
-
-import PropTypes from "prop-types";
 import { useState } from "react";
-import axios from "axios";
 import {
   EMAIL_REGEX,
   FETCH_CITIES,
@@ -35,8 +32,11 @@ import {
   USER_ACTION,
 } from "../constant";
 import { toast } from "react-toastify";
+import { UserContext } from "../../context";
+import { API } from "../utils";
+import axios from "axios";
 
-export default function Header({ isLogin, handleLogout, userInfo }) {
+export default function Header() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [tabVal, setTabVal] = useState("1");
@@ -57,9 +57,10 @@ export default function Header({ isLogin, handleLogout, userInfo }) {
   const handleClose = () => {
     setAnchorEl(null);
   };
+  const {  logoutUser,userInfo}=useContext(UserContext)
   const clickLogout = () => {
-    handleLogout();
     setAnchorEl(null);
+    logoutUser()
   };
   const clickSetting = () => {
     setOpenDialog(true);
@@ -68,7 +69,12 @@ export default function Header({ isLogin, handleLogout, userInfo }) {
     setOpenDialog(false);
     setEditKey(null);
   };
-  const [formData, setFormData] = useState(userInfo);
+  useEffect(() => {
+    if (userInfo) {
+      setFormData(userInfo);
+    }
+  }, [userInfo])
+  const [formData, setFormData] = useState({});
 
   const clickEdit = (key, value) => {
     setEditKey(key);
@@ -106,7 +112,7 @@ export default function Header({ isLogin, handleLogout, userInfo }) {
           _id: id,
         }
       : { [editKey]: tempValue };
-    axios
+    API
       .post(api, params)
       .then((res) => {
         const { data } = res;
@@ -158,25 +164,30 @@ export default function Header({ isLogin, handleLogout, userInfo }) {
   }, [pronviceList, province]);
   const [isClickChangePsw, setIsClickChangePsw] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState(false);
+  
   const handleConfirmDelete = useCallback(() => {
     setDeleteDialog(false);
     setOpenDialog(false);
-    axios
-      .get(`${USER_ACTION}/${id}/delete`, { id })
+    
+    API
+      .delete(`${USER_ACTION}/${id}/delete`, { id })
       .then((res) => {
         const { data } = res;
         const { code, message } = data;
         if (code === SUCCESS_CODE) {
           toast.success(message);
           setTimeout(() => {
-            handleLogout();
+            logoutUser();
           }, 800);
+        }else{
+          toast.error(message);
         }
       })
       .catch((err) => {
-        console.log(err, "delete account error");
+        const errorMessage = err.response?.data?.message || "Failed to delete account";
+        toast.error(errorMessage);
       });
-  }, [handleLogout, id]);
+  }, [id, logoutUser]);
 
   return (
     <>
@@ -188,7 +199,7 @@ export default function Header({ isLogin, handleLogout, userInfo }) {
             <p> Connecting convenient care for everyone</p>
           </div>
         </div>
-        {isLogin ? (
+        {userInfo ? (
           <Stack spacing={2} direction="row" marginRight={6}>
             <Button onClick={handleClick} variant="contained">
               <ManageAccountsOutlinedIcon />
@@ -506,9 +517,3 @@ export default function Header({ isLogin, handleLogout, userInfo }) {
     </>
   );
 }
-
-Header.propTypes = {
-  isLogin: PropTypes.string,
-  handleLogout: PropTypes.func,
-  userInfo: PropTypes.object,
-};

@@ -6,14 +6,15 @@ import { ROLE_MAP } from "../constant";
 import PatientDashboard from "./PatientDashboard";
 import ShipperDashboard from "./ShipperDashboard";
 import PharmacyDashboard from "./PharmacyDashboard";
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { UserContext } from "../../context";
 
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  const userInfo = localStorage.getItem("userInfo");
-  const { account } = JSON.parse(userInfo) || {};
+  const {  userInfo}=useContext(UserContext)
+  const { account } = userInfo || {};
   useEffect(()=>{
     if(!userInfo){
       navigate('/')

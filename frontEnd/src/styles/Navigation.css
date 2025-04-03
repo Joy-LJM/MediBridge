@@ -1,23 +1,29 @@
-#nav{
+#nav {
   padding-top: 100px;
 }
 #nav ul {
   display: flex;
   flex-direction: row;
-  justify-content:center;
+  justify-content: center;
   background-color: var(--secondaryGreen);
   color: #fff;
-  li,a {
-    padding: 1em 2em;
-   
+  height: 50px;
+  box-sizing: border-box;
+  line-height: 50px;
+  li,
+  a {
+    padding: 0 2em;
+  }
+  a {
+    display: inline-block;
+    height: 100%;
   }
   a:hover {
     background-color: var(--mGreen);
-    padding: 1em 2em;
   }
 }
 
-.active{
+.active {
   background-color: var(--lightGreen);
   color: #333;
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import {
   Autocomplete,
   Box,
@@ -19,7 +19,6 @@ import { TextareaAutosize } from "@mui/base/TextareaAutosize";
 import "../styles/Dashboard.css";
 import TabContent from "../components/TabContent";
 import PharmacySearch from "../components/PharmacySearch";
-import axios from "axios";
 import {
   ADD_PATIENT,
   EMAIL_REGEX,
@@ -33,6 +32,9 @@ import {
   SUCCESS_CODE,
 } from "../constant";
 import { toast } from "react-toastify";
+import { UserContext } from "../../context";
+import { API } from "../utils";
+import axios from "axios";
 
 const formErr = {
   firstnameErr: "",
@@ -95,7 +97,7 @@ export default function DoctorDashboard() {
     }
     return null;
   }, [files]);
-
+  const { userInfo } = useContext(UserContext);
   const handleSubmit = useCallback(async () => {
     const { files, selectedPharmacy, patient, remark } = formData || {};
     let newErrors = { filesErr: "", selectedPharmacyErr: "", patientErr: "" };
@@ -119,7 +121,7 @@ export default function DoctorDashboard() {
       newErrors.patientErr = "";
     }
 
-    setError(newErrors); // ✅ Set all errors in one state update
+    setError(newErrors); // Set all errors in one state update
 
     if (
       !newErrors.patientErr &&
@@ -127,7 +129,7 @@ export default function DoctorDashboard() {
       !newErrors.filesErr
     ) {
       const data = new FormData();
-      const { id: doctor_id } = JSON.parse(localStorage.getItem("userInfo"));
+      const { id: doctor_id } = userInfo;
       data.append("prescription_file", files);
       data.append("patient_id", patient._id);
       data.append("doctor_id", doctor_id);
@@ -135,22 +137,27 @@ export default function DoctorDashboard() {
       data.append("pharmacy_id", selectedPharmacy);
       data.append("uploaded_date", new Date());
       data.append("delivery_status", ORDER_STATUS_MAP.NEW);
-
-      const { data: response } = await axios.post(SUBMIT_PRESCRIPTION, data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      const { code, message } = response || {};
-      if (code === SUCCESS_CODE) {
-        toast.success(message);
-        setFormData(formInitials);
-        setPharmacies([]);
-      } else {
-        toast.error(message);
+      try {
+        const { data: response } = await API.post(SUBMIT_PRESCRIPTION, data, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        const { code, message } = response || {};
+        if (code === SUCCESS_CODE) {
+          toast.success(message);
+          setFormData(formInitials);
+          setPharmacies([]);
+        } else {
+          toast.error(message);
+        }
+      } catch (err) {
+        const errorMessage =
+          err.response?.data?.message || "Failed to submit prescription.";
+        toast.error(errorMessage);
       }
     }
-  }, [formData]);
+  }, [formData, userInfo]);
 
   const handleAddPatient = useCallback(async () => {
     const {
@@ -230,42 +237,50 @@ export default function DoctorDashboard() {
       newErrors.postCodeErr = "";
     }
 
-    setPatientFormError(newErrors); // ✅ Set all errors in one state update
+    setPatientFormError(newErrors); // Set all errors in one state update
 
     const withoutError = Object.values(newErrors).every((item) => item === "");
     if (withoutError) {
-      const { data: response } = await axios.post(ADD_PATIENT, patientData);
-      setOpen(false);
-      setPatientData(patientInitials);
-      const { code, message } = response || {};
-      if (code === SUCCESS_CODE) {
-        toast.success("Add patient successfully");
+      try {
+        const { data: response } = await API.post(ADD_PATIENT, patientData);
+        setOpen(false);
+        setPatientData(patientInitials);
+        const { code, message } = response || {};
+        if (code === SUCCESS_CODE) {
+          toast.success("Add patient successfully");
 
-        axios.get(GET_PATIENT_LIST).then((res) => {
-          const { data } = res || {};
-          setPatientList(data.patientList);
-          const curPatient = data.patientList.find(
-            (item) => item.email === email
-          );
+          API.get(GET_PATIENT_LIST).then((res) => {
+            const { data } = res || {};
+            setPatientList(data.patientList);
+            const curPatient = data.patientList.find(
+              (item) => item.email === email
+            );
 
-          const { name: cityName } = cityList.find((item) => item._id === city);
-          const { name: provinceName } = pronviceList.find(
-            (item) => item._id === province
-          );
-          if (error.patientErr) {
-            setError({
-              ...error,
-              patientErr: "",
+            const { name: cityName } = cityList.find(
+              (item) => item._id === city
+            );
+            const { name: provinceName } = pronviceList.find(
+              (item) => item._id === province
+            );
+            if (error.patientErr) {
+              setError({
+                ...error,
+                patientErr: "",
+              });
+            }
+            setFormData({
+              ...formData,
+              patient: curPatient,
+              address: `${address}, ${cityName}, ${provinceName}`,
             });
-          }
-          setFormData({
-            ...formData,
-            patient: curPatient,
-            address: `${address}, ${cityName}, ${provinceName}`,
           });
-        });
-      } else {
-        toast.error(message);
+        } else {
+          toast.error(message);
+        }
+      } catch (err) {
+        const errorMessage =
+          err.response?.data?.message || "Failed to add patient";
+        toast.error(errorMessage);
       }
     }
   }, [cityList, error, formData, patientData, pronviceList]);
@@ -291,10 +306,16 @@ export default function DoctorDashboard() {
 
   const [patientList, setPatientList] = useState([]);
   useEffect(() => {
-    axios.get(GET_PATIENT_LIST).then((res) => {
-      const { data } = res || {};
-      setPatientList(data.patientList);
-    });
+    try {
+      API.get(GET_PATIENT_LIST).then((res) => {
+        const { data } = res || {};
+        setPatientList(data.patientList);
+      });
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch patient list";
+      toast.error(errorMessage);
+    }
   }, []);
 
   const [open, setOpen] = useState(false);

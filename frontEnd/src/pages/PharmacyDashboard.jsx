@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -14,25 +14,20 @@ import {
 import "../styles/Dashboard.css";
 import "../styles/Pharmacy.css";
 import TabContent from "../components/TabContent";
-import axios from "axios";
 import { HOST_URL } from "../constant";
-import { createURLDownloadFile } from "../utils";
+import { API, createURLDownloadFile } from "../utils";
+import { UserContext } from "../../context";
 
 export default function PharmacyDashboard() {
   const [prescriptions, setPrescriptions] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [selectedPdf, setSelectedPdf] = useState("");
-
+  const { userInfo } = useContext(UserContext);
   useEffect(() => {
-    const storedUser = localStorage.getItem("userInfo");
+    if (userInfo) {
+      const pharmacyId = userInfo.id;
 
-    if (storedUser) {
-      // Parse the JSON data to access user properties
-      const parsedUser = JSON.parse(storedUser);
-
-      const pharmacyId = parsedUser.id;
-
-      axios
+      API
         .get(`http://localhost:3000/api/pharmacy/prescriptions/${pharmacyId}`)
         .then((response) => {
           //console.log("API Response:", response); // Log the full response
@@ -47,7 +42,7 @@ export default function PharmacyDashboard() {
     } else {
       console.error("No user info found in localStorage");
     }
-  }, []);
+  }, [userInfo]);
 
   const handlePdfClick = (id) => {
     setSelectedPdf(id); // Set the clicked PDF file
@@ -74,7 +69,7 @@ export default function PharmacyDashboard() {
           : "Completed";
 
       // Await the API request to ensure it's completed
-      await axios.put(
+      await API.put(
         `http://localhost:3000/api/pharmacy/prescription/update/${presId}`,
         { deliveryStatus: status }
       );
@@ -91,7 +86,7 @@ export default function PharmacyDashboard() {
   };
 
   const downloadPres = useCallback(async () => {
-    const res = await axios.get(
+    const res = await API.get(
       `${HOST_URL}/prescription/${selectedPdf}/download`,
       {
         responseType: "blob",
