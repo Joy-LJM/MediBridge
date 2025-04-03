@@ -75,7 +75,7 @@ export default function Header({ isLogin, handleLogout, userInfo }) {
     setTempValue(value);
   };
   const [dataError, setDataErr] = useState("");
-  const { id } = formData ||{};
+  const { id } = formData || {};
   const handleSave = useCallback(() => {
     if (!tempValue) {
       setDataErr("Input can not be empty!");
@@ -143,7 +143,7 @@ export default function Header({ isLogin, handleLogout, userInfo }) {
         .catch((error) => console.error("Error fetching provinces:", error));
     }
   }, [openDialog]);
-  const { province } = formData ||{};
+  const { province } = formData || {};
   useEffect(() => {
     if (province) {
       if (pronviceList.length) {
