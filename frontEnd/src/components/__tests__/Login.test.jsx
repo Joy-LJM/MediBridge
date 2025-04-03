@@ -47,7 +47,7 @@ describe("Login Component", () => {
 
     // Submit the form without filling fields
     fireEvent.click(screen.getByRole("button", { name: /submit/i }));
-
+    
     // Check if the error message is shown
     await waitFor(() =>
       expect(
