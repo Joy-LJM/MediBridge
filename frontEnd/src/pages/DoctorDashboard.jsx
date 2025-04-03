@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import {
   Autocomplete,
   Box,
@@ -19,7 +19,6 @@ import { TextareaAutosize } from "@mui/base/TextareaAutosize";
 import "../styles/Dashboard.css";
 import TabContent from "../components/TabContent";
 import PharmacySearch from "../components/PharmacySearch";
-import axios from "axios";
 import {
   ADD_PATIENT,
   EMAIL_REGEX,
@@ -28,10 +27,14 @@ import {
   GET_PATIENT_LIST,
   ORDER_STATUS_MAP,
   PHONE_REGEX,
+  POSTCODE_REGEX,
   SUBMIT_PRESCRIPTION,
   SUCCESS_CODE,
 } from "../constant";
 import { toast } from "react-toastify";
+import { UserContext } from "../../context";
+import { API } from "../utils";
+import axios from "axios";
 
 const formErr = {
   firstnameErr: "",
@@ -39,6 +42,7 @@ const formErr = {
   phoneNumErr: "",
   addressErr: "",
   emailErr: "",
+  postCodeErr: "",
 };
 const patientInitials = {
   firstname: "",
@@ -49,6 +53,7 @@ const patientInitials = {
   account: "67b270a10a93bde65f142af3",
   city: "",
   province: "",
+  postCode: "",
 };
 const formInitials = {
   files: null,
@@ -92,7 +97,7 @@ export default function DoctorDashboard() {
     }
     return null;
   }, [files]);
-
+  const { userInfo } = useContext(UserContext);
   const handleSubmit = useCallback(async () => {
     const { files, selectedPharmacy, patient, remark } = formData || {};
     let newErrors = { filesErr: "", selectedPharmacyErr: "", patientErr: "" };
@@ -116,7 +121,7 @@ export default function DoctorDashboard() {
       newErrors.patientErr = "";
     }
 
-    setError(newErrors); // ✅ Set all errors in one state update
+    setError(newErrors); // Set all errors in one state update
 
     if (
       !newErrors.patientErr &&
@@ -124,7 +129,7 @@ export default function DoctorDashboard() {
       !newErrors.filesErr
     ) {
       const data = new FormData();
-      const { id: doctor_id } = JSON.parse(localStorage.getItem("userInfo"));
+      const { id: doctor_id } = userInfo;
       data.append("prescription_file", files);
       data.append("patient_id", patient._id);
       data.append("doctor_id", doctor_id);
@@ -132,26 +137,39 @@ export default function DoctorDashboard() {
       data.append("pharmacy_id", selectedPharmacy);
       data.append("uploaded_date", new Date());
       data.append("delivery_status", ORDER_STATUS_MAP.NEW);
-
-      const { data: response } = await axios.post(SUBMIT_PRESCRIPTION, data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      const { code, message } = response || {};
-      if (code === SUCCESS_CODE) {
-        toast.success(message);
-        setFormData(formInitials);
-        setPharmacies([]);
-      } else {
-        toast.error(message);
+      try {
+        const { data: response } = await API.post(SUBMIT_PRESCRIPTION, data, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        const { code, message } = response || {};
+        if (code === SUCCESS_CODE) {
+          toast.success(message);
+          setFormData(formInitials);
+          setPharmacies([]);
+        } else {
+          toast.error(message);
+        }
+      } catch (err) {
+        const errorMessage =
+          err.response?.data?.message || "Failed to submit prescription.";
+        toast.error(errorMessage);
       }
     }
-  }, [formData]);
+  }, [formData, userInfo]);
 
   const handleAddPatient = useCallback(async () => {
-    const { firstname, lastname, phone, address, email, province, city } =
-      patientData || {};
+    const {
+      firstname,
+      lastname,
+      phone,
+      address,
+      email,
+      province,
+      city,
+      postCode,
+    } = patientData || {};
     let newErrors = {
       firstnameErr: "",
       lastnameErr: "",
@@ -198,6 +216,11 @@ export default function DoctorDashboard() {
     } else {
       newErrors.emailErr = "";
     }
+    if (!postCode) {
+      newErrors.postCodeErr = "Please input email!";
+    } else {
+      newErrors.postCodeErr = "";
+    }
     if (!PHONE_REGEX.test(phone)) {
       newErrors.phoneNumErr = "Incorrect phone number format!";
     } else {
@@ -208,43 +231,56 @@ export default function DoctorDashboard() {
     } else {
       newErrors.emailErr = "";
     }
+    if (!POSTCODE_REGEX.test(postCode)) {
+      newErrors.postCodeErr = "Incorrect postcode format!";
+    } else {
+      newErrors.postCodeErr = "";
+    }
 
-    setPatientFormError(newErrors); // ✅ Set all errors in one state update
+    setPatientFormError(newErrors); // Set all errors in one state update
 
     const withoutError = Object.values(newErrors).every((item) => item === "");
     if (withoutError) {
-      const { data: response } = await axios.post(ADD_PATIENT, patientData);
-      setOpen(false);
-      setPatientData(patientInitials);
-      const { code, message } = response || {};
-      if (code === SUCCESS_CODE) {
-        toast.success("Add patient successfully");
+      try {
+        const { data: response } = await API.post(ADD_PATIENT, patientData);
+        setOpen(false);
+        setPatientData(patientInitials);
+        const { code, message } = response || {};
+        if (code === SUCCESS_CODE) {
+          toast.success("Add patient successfully");
 
-        axios.get(GET_PATIENT_LIST).then((res) => {
-          const { data } = res || {};
-          setPatientList(data.patientList);
-          const curPatient = data.patientList.find(
-            (item) => item.email === email
-          );
+          API.get(GET_PATIENT_LIST).then((res) => {
+            const { data } = res || {};
+            setPatientList(data.patientList);
+            const curPatient = data.patientList.find(
+              (item) => item.email === email
+            );
 
-          const { name: cityName } = cityList.find((item) => item._id === city);
-          const { name: provinceName } = pronviceList.find(
-            (item) => item._id === province
-          );
-          if(error.patientErr){
-            setError({
-              ...error,
-              patientErr:""
-            })
-          }
-          setFormData({
-            ...formData,
-            patient: curPatient,
-            address: `${address}, ${cityName}, ${provinceName}`,
+            const { name: cityName } = cityList.find(
+              (item) => item._id === city
+            );
+            const { name: provinceName } = pronviceList.find(
+              (item) => item._id === province
+            );
+            if (error.patientErr) {
+              setError({
+                ...error,
+                patientErr: "",
+              });
+            }
+            setFormData({
+              ...formData,
+              patient: curPatient,
+              address: `${address}, ${cityName}, ${provinceName}`,
+            });
           });
-        });
-      } else {
-        toast.error(message);
+        } else {
+          toast.error(message);
+        }
+      } catch (err) {
+        const errorMessage =
+          err.response?.data?.message || "Failed to add patient";
+        toast.error(errorMessage);
       }
     }
   }, [cityList, error, formData, patientData, pronviceList]);
@@ -253,7 +289,7 @@ export default function DoctorDashboard() {
     (e) => {
       setFormData({
         ...formData,
-        selectedPharmacy: e?.target?.value??"",
+        selectedPharmacy: e?.target?.value ?? "",
       });
     },
     [formData]
@@ -270,11 +306,16 @@ export default function DoctorDashboard() {
 
   const [patientList, setPatientList] = useState([]);
   useEffect(() => {
-    
-    axios.get(GET_PATIENT_LIST).then((res) => {
-      const { data } = res || {};
-      setPatientList(data.patientList);
-    });
+    try {
+      API.get(GET_PATIENT_LIST).then((res) => {
+        const { data } = res || {};
+        setPatientList(data.patientList);
+      });
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch patient list";
+      toast.error(errorMessage);
+    }
   }, []);
 
   const [open, setOpen] = useState(false);
@@ -315,7 +356,7 @@ export default function DoctorDashboard() {
     // <FormControl required>
     <>
       <TabContent label="Upload Prescription">
-        <Grid2 container spacing={2} >
+        <Grid2 container spacing={2}>
           <Grid2 size={4}>
             <label>Upload Prescription:</label>
           </Grid2>
@@ -433,11 +474,11 @@ export default function DoctorDashboard() {
             />
           </Grid2>
         </Grid2>
-       <Grid2 size={12} marginTop={4}>
-       <Button color="success" variant="contained" onClick={handleSubmit}>
-          Submit
-        </Button>
-       </Grid2>
+        <Grid2 size={12} marginTop={4}>
+          <Button color="success" variant="contained" onClick={handleSubmit}>
+            Submit
+          </Button>
+        </Grid2>
       </TabContent>
       <Dialog
         open={open}
@@ -610,23 +651,14 @@ export default function DoctorDashboard() {
                     {patientFormError.provinceErr}
                   </FormHelperText>
                 </FormControl>
-
-                {/* Fixed Select Dropdown */}
-                <FormControl sx={{ marginBottom: "30px" }}>
-                  <InputLabel
-                    id="age-label"
-                    // sx={{ "&.Mui-focused ": { color: "#fff" }, color: "#fff" }}
-                  >
-                    City
-                  </InputLabel>
+                <FormControl>
+                  <InputLabel id="age-label">City</InputLabel>
                   <Select
                     labelId="age-label"
                     id="age"
                     label="City"
                     value={patientData.city}
                     onChange={(e) => {
-                      console.log(e, "eeeee");
-
                       setPatientData({
                         ...patientData,
                         city: e.target.value,
@@ -652,6 +684,30 @@ export default function DoctorDashboard() {
                     {patientFormError.cityErr}
                   </FormHelperText>
                 </FormControl>
+                <TextField
+                  id="postCode"
+                  label="Postal Code"
+                  type="text"
+                  value={patientData.postCode}
+                  sx={{
+                    marginBottom: "10px",
+                    "& .MuiOutlinedInput-root": {
+                      "&:hover fieldset": { borderColor: "#689D6D" },
+                    },
+                  }}
+                  onChange={(e) => {
+                    setPatientData({
+                      ...patientData,
+                      postCode: e.target.value.toUpperCase(),
+                    });
+                  }}
+                />
+                <FormHelperText
+                  className="textErr"
+                  error={!!patientFormError.postCodeErr}
+                >
+                  {patientFormError.postCodeErr}
+                </FormHelperText>
               </FormControl>
             </form>
           </Box>

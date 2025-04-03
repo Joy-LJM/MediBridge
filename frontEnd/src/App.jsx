@@ -1,4 +1,5 @@
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
+import CircularProgress from "@mui/material/CircularProgress";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -8,28 +9,16 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Header from "./components/Header";
 import Navigation from "./components/Navigation";
-import { useEffect, useState } from "react";
+import { useContext } from "react";
 import Footer from "./components/Footer";
 import PswReset from "./pages/PswReset";
 import { ToastContainer } from "react-toastify";
-
+import { UserContext } from "../context";
+import { Box } from "@mui/material";
 function App() {
-  const [isLogin, setIsLogin] = useState(false);
-  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.clear("userInfo");
-    navigate("/");
-  };
-  const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-  
-  useEffect(() => {
-    if (userInfo) {
-      setIsLogin(true);
-    } else {
-      setIsLogin(false);
-    }
-  }, [userInfo]);
+  const {  loading } = useContext(UserContext);
+
   const ROUTES = [
     {
       path: "/",
@@ -68,15 +57,28 @@ function App() {
       element: <Navigate to="/" replace />,
     },
   ];
-
+  if (loading)
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <CircularProgress disableShrink />
+      </Box>
+    );
 
   return (
     <>
-    <ToastContainer/>
-      <Header isLogin={isLogin} handleLogout={handleLogout} userInfo={userInfo}/>
-      <Navigation isLogin={isLogin} />
+      <ToastContainer />
+      <Header/>
+      <Navigation  />
       <Routes>
-        {ROUTES.map(({path,element})=> <Route key={path} path={path} element={element} />)}
+        {ROUTES.map(({ path, element }) => (
+          <Route key={path} path={path} element={element} />
+        ))}
       </Routes>
       <Footer />
     </>

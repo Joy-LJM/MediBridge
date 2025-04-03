@@ -38,7 +38,7 @@ const ShipperDashboard = () => {
     };
 
     return (
-        <Box sx={{ backgroundColor: "#F0F8E2", minHeight: "100vh", paddingBottom: "20px" }}>
+        <Box sx={{  minHeight: "100vh", paddingBottom: "20px" }}>
             <Box sx={{ display: "flex" }}>
                 <Box sx={{ width: "200px", backgroundColor: "#6F996D", color: "white", padding: "20px", minHeight: "100vh" }}>
                     <Typography variant="h6" sx={{ fontWeight: "bold" }}>

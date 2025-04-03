@@ -1,9 +1,6 @@
 import * as React from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
-import Footer from "../components/Footer";
-import Header from "../components/Header";
-import Navigation from "../components/Navigation";
 import {
   Typography,
   Container,
@@ -64,8 +61,6 @@ export default function Verification() {
 
   return (
     <div className="container">
-      <Header />
-      <Navigation />
       <Container
         className="signUp"
         sx={{
@@ -129,7 +124,6 @@ export default function Verification() {
           </Alert>
         </Snackbar>
       </Container>
-      <Footer />
     </div>
   );
 }
