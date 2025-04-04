@@ -6,17 +6,17 @@ const sgMail = require("@sendgrid/mail");
 const multer = require("multer");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const { MongoClient, ObjectId } = require("mongodb");
 require("./corsSettings");
 
 const app = express();
 
-const { MongoClient, ObjectId } = require("mongodb");
 const authMiddleware = require("./middleware/authMiddleware");
 
 const port = process.env.PORT || "3000";
 
 const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/mediBridge`;
-// const dbUrl = "mongodb://localhost:27017/mediBridge"; //default port is 27017
+
 const client = new MongoClient(dbUrl);
 sgMail.setApiKey(process.env.API_KEY);
 app.use(cookieParser());
@@ -194,7 +194,7 @@ app.post("/login", async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true, //  Prevents XSS attacks
       secure: process.env.NODE_ENV === "production", //  Secure in production
-      sameSite: "strict",
+      sameSite: "None",
       maxAge: 24 * 60 * 60 * 1000, //  1 day
       path: "/", //  Ensures cookie is sent on all requests
     });
@@ -318,7 +318,7 @@ app.post("/validateCode", async (req, res) => {
     message: "Valid verification code",
   });
 });
-app.post("/resetPsw", async (req, res) => {
+app.post("/resetPsw", authMiddleware, async (req, res) => {
   try {
     const { _id, password } = req.body;
 
