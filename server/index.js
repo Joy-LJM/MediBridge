@@ -8,7 +8,6 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const { MongoClient, ObjectId } = require("mongodb");
-// require("./corsSettings");
 const authMiddleware = require("./middleware/authMiddleware");
 
 const app = express();
@@ -225,7 +224,7 @@ app.post("/login", async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true, //  Prevents XSS attacks
       secure: process.env.NODE_ENV === "production", //  Secure in production
-      sameSite: "strict",
+      sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000, //  1 day
       path: "/", //  Ensures cookie is sent on all requests
     });
