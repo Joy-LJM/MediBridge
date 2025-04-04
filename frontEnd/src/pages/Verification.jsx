@@ -11,6 +11,7 @@ import {
   Alert,
 } from "@mui/material";
 import "../styles/register.css";
+import { HOST_URL } from "../constant";
 
 export default function Verification() {
   const location = useLocation();
@@ -35,7 +36,7 @@ export default function Verification() {
     setLoading(true);
     e.preventDefault();
     axios
-      .post("http://localhost:3000/verify", {
+      .post(`${HOST_URL}/verify`, {
         email,
         verificationCode: code,
       })

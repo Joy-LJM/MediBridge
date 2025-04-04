@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { Container, Card, CardContent, Typography, Button, Grid, Box, Avatar } from "@mui/material";
+import  { useState, useEffect } from "react";
+import { Container, Card, CardContent, Typography, Button, Grid, Box, } from "@mui/material";
 import axios from "axios";
+import { HOST_URL } from "../constant";
 
 const ShipperDashboard = () => {
     const [orders, setOrders] = useState([]);
@@ -11,7 +12,7 @@ const ShipperDashboard = () => {
 
     const fetchOrders = async () => {
         try {
-            const { data } = await axios.get("http://localhost:3000/api/orders");
+            const { data } = await axios.get(`${HOST_URL}/api/orders`);
             console.log("Fetched Orders:", data);
             setOrders(data);
         } catch (error) {
@@ -21,7 +22,7 @@ const ShipperDashboard = () => {
 
     const handleAccept = async (id) => {
         try {
-            await axios.put(`http://localhost:3000/api/orders/update/${id}`, { status: "Accepted" });
+            await axios.put(`${HOST_URL}/api/orders/update/${id}`, { status: "Accepted" });
             fetchOrders();
         } catch (error) {
             console.error("Error accepting order:", error);
@@ -30,7 +31,7 @@ const ShipperDashboard = () => {
 
     const handleDeliveryComplete = async (id) => {
         try {
-            await axios.put(`http://localhost:3000/api/orders/update/${id}`, { status: "Completed" });
+            await axios.put(`${HOST_URL}/api/orders/update/${id}`, { status: "Completed" });
             fetchOrders();
         } catch (error) {
             console.error("Error completing delivery:", error);

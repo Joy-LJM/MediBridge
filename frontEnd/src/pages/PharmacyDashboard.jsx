@@ -28,7 +28,7 @@ export default function PharmacyDashboard() {
       const pharmacyId = userInfo.id;
 
       API
-        .get(`http://localhost:3000/api/pharmacy/prescriptions/${pharmacyId}`)
+        .get(`${HOST_URL}/api/pharmacy/prescriptions/${pharmacyId}`)
         .then((response) => {
           //console.log("API Response:", response); // Log the full response
           if (response.data && response.data.length > 0) {
@@ -70,7 +70,7 @@ export default function PharmacyDashboard() {
 
       // Await the API request to ensure it's completed
       await API.put(
-        `http://localhost:3000/api/pharmacy/prescription/update/${presId}`,
+        `${HOST_URL}/api/pharmacy/prescription/update/${presId}`,
         { deliveryStatus: status }
       );
 
