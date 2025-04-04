@@ -4,9 +4,9 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
 const multer = require("multer");
-
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+
 const envFile =
   process.env.NODE_ENV === "production"
     ? ".env.production"
@@ -14,6 +14,29 @@ const envFile =
 dotenv.config({ path: envFile });
 
 const cors = require("cors"); //need this to set this API to allow requests from other servers
+//allow requests from all servers
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "https://medi-bridge-1.vercel.app/"],
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allow common methods
+    credentials: true,
+  })
+);
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://medi-bridge-1.vercel.app"); // Allow frontend
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); // Allow common HTTP methods
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization"); // Allow necessary headers
+  res.header("Access-Control-Allow-Credentials", "true"); // Allow cookies
+  next();
+});
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", "https://medi-bridge-1.vercel.app");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.sendStatus(204); // No content response for preflight
+});
+
 const { MongoClient, ObjectId } = require("mongodb");
 const authMiddleware = require("./middleware/authMiddleware");
 
@@ -31,14 +54,6 @@ app.use(express.json()); //need this line to be able to receive/parse JSON from 
 // app.use("/uploads", express.static("uploads"));
 // Set the Content Security Policy header
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-//allow requests from all servers
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "https://medi-bridge-1.vercel.app/"],
-    credentials: true,
-  })
-);
 
 // verifictaion code will be saved temporary here.
 const verificationCodes = {};
