@@ -143,7 +143,7 @@ const PharmacySearch = ({
       <Box sx={{ p: 4, maxWidth: 500, mx: "auto", textAlign: "center" }}>
         <TextField
           fullWidth
-          label="Enter Address (e.g., 31 Devitte Ave N)"
+          label="Enter Address"
           variant="outlined"
           value={address}
           onChange={handleChangeAddress}

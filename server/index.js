@@ -194,7 +194,7 @@ app.post("/login", async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true, //  Prevents XSS attacks
       secure: process.env.NODE_ENV === "production", //  Secure in production
-      sameSite: "None",
+      sameSite: "none",
       maxAge: 24 * 60 * 60 * 1000, //  1 day
       path: "/", //  Ensures cookie is sent on all requests
     });
