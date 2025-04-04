@@ -271,7 +271,7 @@ app.post("/logout", (req, res) => {
 });
 
 let validateCode = {};
-app.post("/validateEmail", authMiddleware, async (req, res) => {
+app.post("/validateEmail", async (req, res) => {
   const { email } = req.body;
   db = await connection();
   const user = await db.collection("users").findOne({ email });
@@ -331,7 +331,7 @@ app.post("/validateCode", async (req, res) => {
     message: "Valid verification code",
   });
 });
-app.post("/resetPsw", authMiddleware, async (req, res) => {
+app.post("/resetPsw", async (req, res) => {
   try {
     const { _id, password } = req.body;
 

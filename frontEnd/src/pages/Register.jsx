@@ -13,7 +13,7 @@ import {
   InputLabel,
   Button,
 } from "@mui/material";
-import "../styles/register.css";
+import "../styles/Register.css";
 
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
