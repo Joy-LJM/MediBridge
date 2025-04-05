@@ -3,6 +3,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -305,16 +306,26 @@ export default function DoctorDashboard() {
   );
 
   const [patientList, setPatientList] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
   useEffect(() => {
     try {
-      API.get(GET_PATIENT_LIST).then((res) => {
-        const { data } = res || {};
-        setPatientList(data.patientList);
-      });
+      setIsLoading(true);
+      API.get(GET_PATIENT_LIST)
+        .then((res) => {
+          const { data } = res || {};
+          setPatientList(data.patientList);
+        })
+        .catch((err) => {
+          const errorMessage =
+            err.response?.data?.message || "Failed to fetch patient list";
+          toast.error(errorMessage);
+        })
+        .finally(() => setIsLoading(false));
     } catch (err) {
       const errorMessage =
-        err.response?.data?.message || "Failed to fetch patient list";
+        err.response?.data?.message || "An unexpected error occurred.";
       toast.error(errorMessage);
+      setIsLoading(false);
     }
   }, []);
 
@@ -390,12 +401,34 @@ export default function DoctorDashboard() {
           <Grid2 size={8} style={{ display: "flex", alignItems: "center" }}>
             <Grid2 size={9}>
               <Box
-                sx={{ p: 4, maxWidth: 400, mx: "auto", textAlign: "center" }}
+                sx={{
+                  p: 4,
+                  maxWidth: 400,
+                  mx: "auto",
+                  textAlign: "center",
+                  position: "relative",
+                }}
               >
+                {isLoading && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      position: "absolute",
+                      zIndex: 999,
+                      left: "50%",
+                      top: "30%",
+                    }}
+                  >
+                    <CircularProgress size={30} />
+                  </Box>
+                )}
                 <Autocomplete
                   // sx={{ width: 300 }}
                   options={patientList}
                   autoHighlight
+                  disabled={isLoading}
                   getOptionLabel={(option) => {
                     if (option) {
                       return `${option.firstname} ${option.lastname}`;

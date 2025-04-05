@@ -682,7 +682,7 @@ app.get("/prescription/patient", authMiddleware, async (req, res, next) => {
             email,
             address: `${address}${cityData ? "," + cityData.name : ""}${
               provinceData ? "," + provinceData.name : ""
-            },${postCode}`,
+            }${postCode ? `,${postCode}` : ""}`,
           };
         }
       )
@@ -714,7 +714,7 @@ app.get("/prescription/pharmacy", async (req, res, next) => {
         address,
         city,
         province,
-        // postalCode
+        postalCode,
       }) => {
         const res = {
           _id,
@@ -725,6 +725,7 @@ app.get("/prescription/pharmacy", async (req, res, next) => {
           address,
           city,
           province,
+          postalCode,
         };
         return res;
       }

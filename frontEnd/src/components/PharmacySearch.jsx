@@ -110,8 +110,9 @@ const PharmacySearch = ({
             }
           })
         );
-        const validAddresses = addressCoords.filter((addr) => addr !== null);
+        const validAddresses = addressCoords.filter((addr) => addr !== null).filter(Boolean);
         setLoading(false);
+
 
         const sortedPharmacy = validAddresses
           .map((addr) => ({
