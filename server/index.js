@@ -618,7 +618,8 @@ app.post(
   upload.single("prescription_file"),
   async (req, res, next) => {
     try {
-      const { patient_id, doctor_id, pharmacy_id, ...data } = req.body;
+      const { patient_id, doctor_id, pharmacy_id, delivery_status, ...data } =
+        req.body;
       const file = req.file;
 
       if (!file) {
@@ -631,6 +632,7 @@ app.post(
         patient_id: new ObjectId(patient_id),
         doctor_id: new ObjectId(doctor_id),
         pharmacy_id: new ObjectId(pharmacy_id),
+        delivery_status: new ObjectId(delivery_status),
         prescription_file: file,
       });
 
