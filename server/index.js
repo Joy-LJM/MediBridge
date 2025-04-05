@@ -46,8 +46,8 @@ app.options("*", (req, res) => {
 const port = process.env.PORT || "3000";
 
 const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/mediBridge`;
-
 const client = new MongoClient(dbUrl);
+
 sgMail.setApiKey(process.env.API_KEY);
 app.use(cookieParser());
 
@@ -224,7 +224,7 @@ app.post("/login", async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true, //  Prevents XSS attacks
       secure: process.env.NODE_ENV === "production", //  Secure in production
-      sameSite: "none",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
       maxAge: 24 * 60 * 60 * 1000, //  1 day
       path: "/", //  Ensures cookie is sent on all requests
     });

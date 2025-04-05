@@ -9,6 +9,7 @@ const ORDER_STATUS_MAP = {
 };
 const SUCCESS_CODE = 1;
 
+// read url from .env file based on environment
 const HOST_URL = import.meta.env.VITE_API_URL;
 const LOGIN = `${HOST_URL}/login`;
 const VALIDATE_EMAIL = `${HOST_URL}/validateEmail`;
