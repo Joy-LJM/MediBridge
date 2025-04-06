@@ -16,7 +16,7 @@ describe("Prescription Upload Feature", () => {
     expect(fileInput.files[0].name).toBe("prescription.pdf");
     expect(fileInput.files).toHaveLength(1);
   });
-
+  
   test("triggers form submission with the uploaded file", () => {
     render(<DoctorDashboard />);
     const fileInput = screen.getByLabelText(/Upload Prescription/i);

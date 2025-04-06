@@ -7,7 +7,11 @@ const multer = require("multer");
 
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
-dotenv.config();
+const envFile =
+  process.env.NODE_ENV === "production"
+    ? ".env.production"
+    : ".env.development";
+dotenv.config({ path: envFile });
 
 const cors = require("cors"); //need this to set this API to allow requests from other servers
 const { MongoClient, ObjectId } = require("mongodb");
