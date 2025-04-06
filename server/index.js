@@ -556,11 +556,11 @@ async function account(userData) {
 }
 
 //Async function to get status id through status name
-async function getStatusId(deliveryStatus) {
+async function getStatusId(delivery_status) {
   db = await connection();
   const statusDoc = await db
     .collection("deliveryStatus")
-    .findOne({ status: deliveryStatus });
+    .findOne({ status: delivery_status });
   return statusDoc._id;
 }
 
@@ -572,7 +572,7 @@ async function updateStatus(id, statusId) {
     .collection("prescriptions")
     .updateOne(
       { _id: preId },
-      { $set: { deliveryStatus: statusId, updated_at: new Date() } }
+      { $set: { delivery_status: statusId, updated_at: new Date() } }
     );
 
   if (result.modifiedCount === 0) {
