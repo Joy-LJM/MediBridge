@@ -4,21 +4,50 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
 const multer = require("multer");
-
+const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
-dotenv.config();
-
-const cors = require("cors"); //need this to set this API to allow requests from other servers
 const { MongoClient, ObjectId } = require("mongodb");
 const authMiddleware = require("./middleware/authMiddleware");
 
 const app = express();
+const envFile =
+  process.env.NODE_ENV === "production"
+    ? ".env.production"
+    : ".env.development";
+dotenv.config({ path: envFile });
+//allow requests from target server based on env
+const allowedOrigin =
+  process.env.NODE_ENV === "production"
+    ? "https://medi-bridge-1.vercel.app"
+    : "http://localhost:5173";
+app.use(
+  cors({
+    origin: allowedOrigin,
+    methods: ["GET", "POST", "PUT", "DELETE"], // Allow common methods
+    credentials: true,
+  })
+);
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", allowedOrigin); // Allow frontend
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); // Allow common HTTP methods
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization"); // Allow necessary headers
+  res.header("Access-Control-Allow-Credentials", "true"); // Allow cookies
+  next();
+});
+app.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", allowedOrigin);
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.sendStatus(204); // No content response for preflight
+});
+
 const port = process.env.PORT || "3000";
 
 const dbUrl = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PWD}@${process.env.DB_HOST}/mediBridge`;
-// const dbUrl = "mongodb://localhost:27017/mediBridge"; //default port is 27017
 const client = new MongoClient(dbUrl);
+
 sgMail.setApiKey(process.env.API_KEY);
 app.use(cookieParser());
 
@@ -27,14 +56,6 @@ app.use(express.json()); //need this line to be able to receive/parse JSON from 
 // app.use("/uploads", express.static("uploads"));
 // Set the Content Security Policy header
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-//allow requests from all servers
-app.use(
-  cors({
-    origin: ["http://localhost:5173"],
-    credentials: true,
-  })
-);
 
 // verifictaion code will be saved temporary here.
 const verificationCodes = {};
@@ -203,7 +224,7 @@ app.post("/login", async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true, //  Prevents XSS attacks
       secure: process.env.NODE_ENV === "production", //  Secure in production
-      sameSite: "strict",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
       maxAge: 24 * 60 * 60 * 1000, //  1 day
       path: "/", //  Ensures cookie is sent on all requests
     });
@@ -267,7 +288,7 @@ app.post("/logout", (req, res) => {
 });
 
 let validateCode = {};
-app.post("/validateEmail", authMiddleware, async (req, res) => {
+app.post("/validateEmail", async (req, res) => {
   const { email } = req.body;
   db = await connection();
   const user = await db.collection("users").findOne({ email });
@@ -597,7 +618,8 @@ app.post(
   upload.single("prescription_file"),
   async (req, res, next) => {
     try {
-      const { patient_id, doctor_id, pharmacy_id, ...data } = req.body;
+      const { patient_id, doctor_id, pharmacy_id, delivery_status, ...data } =
+        req.body;
       const file = req.file;
 
       if (!file) {
@@ -610,6 +632,7 @@ app.post(
         patient_id: new ObjectId(patient_id),
         doctor_id: new ObjectId(doctor_id),
         pharmacy_id: new ObjectId(pharmacy_id),
+        delivery_status: new ObjectId(delivery_status),
         prescription_file: file,
       });
 
@@ -661,7 +684,7 @@ app.get("/prescription/patient", authMiddleware, async (req, res, next) => {
             email,
             address: `${address}${cityData ? "," + cityData.name : ""}${
               provinceData ? "," + provinceData.name : ""
-            },${postCode}`,
+            }${postCode ? `,${postCode}` : ""}`,
           };
         }
       )
@@ -693,7 +716,7 @@ app.get("/prescription/pharmacy", async (req, res, next) => {
         address,
         city,
         province,
-        // postalCode
+        postalCode,
       }) => {
         const res = {
           _id,
@@ -704,6 +727,7 @@ app.get("/prescription/pharmacy", async (req, res, next) => {
           address,
           city,
           province,
+          postalCode,
         };
         return res;
       }

@@ -11,7 +11,7 @@ import {
   FormControl,
   Button,
 } from "@mui/material";
-import "../styles/login.css";
+import "../styles/Login.css";
 import {
   VERIFY_CODE,
   SUCCESS_CODE,

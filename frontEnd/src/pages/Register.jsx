@@ -13,13 +13,13 @@ import {
   InputLabel,
   Button,
 } from "@mui/material";
-import "../styles/register.css";
+import "../styles/Register.css";
 
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormLabel from "@mui/material/FormLabel";
-import { POSTCODE_REGEX } from "../constant";
+import { HOST_URL, POSTCODE_REGEX } from "../constant";
 import { UserContext } from "../../context";
 // import { HOST_URL } from "../constant";
 
@@ -46,7 +46,7 @@ export default function Register() {
   // Fetch provinces on component mount
   React.useEffect(() => {
     axios
-      .get(`http://localhost:3000/api/provinces`)
+      .get(`${HOST_URL}/api/provinces`)
       .then((response) => {
         setProvinces(response.data);
       })
@@ -57,7 +57,7 @@ export default function Register() {
   React.useEffect(() => {
     if (selectedProvince) {
       axios
-        .get(`http://localhost:3000/api/cities/${selectedProvince}`)
+        .get(`${HOST_URL}/api/cities/${selectedProvince}`)
         .then((response) => {
           setCities(response.data);
         })
@@ -68,7 +68,7 @@ export default function Register() {
   // Fetch account
   React.useEffect(() => {
     axios
-      .get("http://localhost:3000/api/accounts")
+      .get(`${HOST_URL}/api/accounts`)
       .then((response) => {
         setAccount(response.data);
       })
@@ -113,7 +113,7 @@ export default function Register() {
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .post(`http://localhost:3000/register`, {
+      .post(`${HOST_URL}/register`, {
         firstname,
         lastname,
         email,

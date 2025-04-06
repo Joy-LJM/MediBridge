@@ -1,10 +1,10 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useMemo } from "react";
 import PropTypes from 'prop-types';
 import { API } from "../src/utils";
-
+// React Context to share the userInfo state and auth methods across the app
 const UserContext = createContext();
 
-const UseProvider = ({ children }) => {
+const UserProvider = ({ children }) => {
   const [userInfo, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,12 +27,19 @@ const UseProvider = ({ children }) => {
     await API.post("/logout");
     setUser(null);
   };
+  const contextValue = useMemo(() => ({
+    userInfo,
+    loginUser,
+    logoutUser,
+    loading,
+    handleLoading
+  }), [userInfo, loading]);
 
   return (
-    <UserContext.Provider value={{ userInfo, loginUser, logoutUser, loading,handleLoading }}>
+    <UserContext.Provider value={contextValue}>
       {children}
     </UserContext.Provider>
   );
 };
-UseProvider.propTypes = { children: PropTypes.node }
-export { UserContext, UseProvider };
+UserProvider.propTypes = { children: PropTypes.node }
+export { UserContext, UserProvider };
