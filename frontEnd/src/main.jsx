@@ -9,7 +9,7 @@ import App from "./App.jsx";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline } from "@mui/material";
 import { QueryClient } from "@tanstack/react-query";
-import { UseProvider } from "../context";
+import { UserProvider } from "../context";
 
 let theme = createTheme({
   palette: {
@@ -26,14 +26,19 @@ const queryClient = new QueryClient();
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
+      {/* Provide React Query client to the app */}
       <QueryClientProvider client={queryClient} contextSharing={true}>
-        <UseProvider>
+        {/* Provide global context state and methods */}
+        <UserProvider>
+          {/* Apply Material UI theme */}
           <ThemeProvider theme={theme}>
+            {/* Normalize CSS across browsers */}
             <CssBaseline />
             <App />
+            {/* React Query dev tools (only in development) */}
             <ReactQueryDevtools initialIsOpen={false} />
           </ThemeProvider>
-        </UseProvider>
+        </UserProvider>
       </QueryClientProvider>
     </BrowserRouter>
   </StrictMode>
