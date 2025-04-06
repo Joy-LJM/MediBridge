@@ -4,9 +4,11 @@ const dotenv = require("dotenv");
 const bcrypt = require("bcrypt");
 const sgMail = require("@sendgrid/mail");
 const multer = require("multer");
-const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+dotenv.config();
+
+const cors = require("cors"); //need this to set this API to allow requests from other servers
 const { MongoClient, ObjectId } = require("mongodb");
 const authMiddleware = require("./middleware/authMiddleware");
 
@@ -552,10 +554,12 @@ async function getPharmacyPrescriptions(id) {
         "doctor.lastname": 1,
         prescription_file: 1,
         "status.status": 1,
+        uploaded_date: 1,
         pharmacy_id: 1, //
         created: 1,
       },
     },
+    { $sort: { uploaded_date: -1 } },
   ]);
 
   const res = await combinedData.toArray();

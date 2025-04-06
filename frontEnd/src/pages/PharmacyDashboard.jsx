@@ -27,8 +27,7 @@ export default function PharmacyDashboard() {
     if (userInfo) {
       const pharmacyId = userInfo.id;
 
-      API
-        .get(`${HOST_URL}/api/pharmacy/prescriptions/${pharmacyId}`)
+      API.get(`${HOST_URL}/api/pharmacy/prescriptions/${pharmacyId}`)
         .then((response) => {
           //console.log("API Response:", response); // Log the full response
           if (response.data && response.data.length > 0) {
@@ -69,10 +68,9 @@ export default function PharmacyDashboard() {
           : "Completed";
 
       // Await the API request to ensure it's completed
-      await API.put(
-        `${HOST_URL}/api/pharmacy/prescription/update/${presId}`,
-        { deliveryStatus: status }
-      );
+      await API.put(`${HOST_URL}/api/pharmacy/prescription/update/${presId}`, {
+        deliveryStatus: status,
+      });
 
       // Update local state based on the correct status name
       setPrescriptions((prev) =>
@@ -131,6 +129,30 @@ export default function PharmacyDashboard() {
                         }}
                       >
                         Order: {pres._id}
+                      </Typography>
+
+                      <Typography
+                        sx={{
+                          fontWeight: "bold",
+                          fontSize: "15px",
+                          fontFamily: "Georgia, serif",
+                          marginBottom: "20px",
+                          marginLeft: "100px",
+                          textAlign: "left",
+                        }}
+                      >
+                        Uploaded Date : {new Date(pres.uploaded_date)
+                          .toLocaleString("en-US", {
+                            weekday: "long", // e.g., Sunday
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: false,
+                          })
+                          .replace(",", "")}
                       </Typography>
 
                       <Typography
