@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useContext } from "react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import {
   Typography,
@@ -10,7 +10,7 @@ import {
   FormControl,
   Button,
 } from "@mui/material";
-import "../styles/login.css";
+import "../styles/Login.css";
 import { SUCCESS_CODE } from "../constant";
 import { useAuth } from "../hooks/useAuth";
 import { UserContext } from "../../context";
@@ -110,6 +110,10 @@ export default function Login() {
                   }}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+                  <div className="signup">
+                  <Link to="/password_reset">Forgot password?</Link>
+                  <p>Need an account?<Link to="/register">Sign up</Link></p>
+                  </div>
                 <Button
                   variant="outlined"
                   size="large"

@@ -8,7 +8,7 @@ import {
   Box,
 } from "@mui/material";
 import StarIcon from "@mui/icons-material/Star";
-import "../styles/home.css";
+import "../styles/Home.css";
 import avatar from "../assets/avatar.png";
 
 export default function Home() {

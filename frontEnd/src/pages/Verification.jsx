@@ -10,7 +10,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import "../styles/register.css";
+import "../styles/Register.css";
 import { HOST_URL } from "../constant";
 
 export default function Verification() {

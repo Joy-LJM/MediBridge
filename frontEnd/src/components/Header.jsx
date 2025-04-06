@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect } from "react";
 import { Link } from "react-router-dom";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
 import logo from "../assets/logo.png";
-import "../styles/header.css";
+import "../styles/Header.css";
 import {
   Box,
   Button,
