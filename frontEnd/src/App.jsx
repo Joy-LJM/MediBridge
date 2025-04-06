@@ -18,7 +18,7 @@ import { Box } from "@mui/material";
 function App() {
 
   const {  loading } = useContext(UserContext);
-
+// define routes for application
   const ROUTES = [
     {
       path: "/",
