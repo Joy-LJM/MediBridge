@@ -54,7 +54,7 @@ export default function Verification() {
       })
       .catch((err) => {
         console.error("Error verifying code:", err);
-        setError("There was an error verifying your code");
+        setError("Wrong verification code. Please enter a correct code!");
         setOpenSnackbar(true);
       });
     setLoading(false);

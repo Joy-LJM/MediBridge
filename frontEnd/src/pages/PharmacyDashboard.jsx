@@ -141,7 +141,8 @@ export default function PharmacyDashboard() {
                           textAlign: "left",
                         }}
                       >
-                        Uploaded Date : {new Date(pres.uploaded_date)
+                        Uploaded Date :{" "}
+                        {new Date(pres.uploaded_date)
                           .toLocaleString("en-US", {
                             weekday: "long", // e.g., Sunday
                             year: "numeric",
@@ -316,9 +317,7 @@ export default function PharmacyDashboard() {
                               boxShadow: "none",
                               marginTop: "20px",
                             }}
-                            onClick={() =>
-                              handleButton(pres._id, "delivered_shipper")
-                            }
+                            disabled
                           >
                             Delivered To Shipper
                           </Button>
