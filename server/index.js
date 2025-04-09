@@ -405,24 +405,19 @@ app.get(
   }
 );
 
-//Update status of prescription
-app.put(
-  "/api/pharmacy/prescription/update/:id",
-  authMiddleware,
-  async (req, res) => {
-    let preId = req.params.id;
-    let { deliveryStatus } = req.body;
+app.put("/api/pharmacy/prescription/update/:id", authMiddleware, async (req, res) => {
+  let preId = req.params.id;
+  let { deliveryStatus } = req.body;
 
-    const statusId = await getStatusId(deliveryStatus);
-    const result = await updateStatus(preId, statusId);
+  const statusId = await getStatusId(deliveryStatus); // convert string like "Delivering" → ObjectId
+  const result = await updateStatus(preId, statusId);
 
-    // Respond with appropriate status and message
-    res.status(result.status).json({
-      status: result.status === 200 ? "success" : "error",
-      message: result.message,
-    });
-  }
-);
+  res.status(result.status).json({
+    status: result.status === 200 ? "success" : "error",
+    message: result.message,
+  });
+});
+
 
 /**END PHARMACY SECTION */
 
@@ -432,6 +427,13 @@ app.get("/api/orders", async (request, response) => {
   console.log(orders);
   response.json(orders); //send JSON object with appropriate JSON headers
 });
+
+async function getStatusId(delivery_status) {
+  const statusDoc = await db
+    .collection("deliveryStatus")
+    .findOne({ status: delivery_status });
+  return statusDoc._id;
+}
 
 //set up server listening
 app.listen(port, () => {
@@ -450,12 +452,29 @@ async function getProvinces() {
 }
 
 /* Async function to retrieve all orders*/
+/* Async function to retrieve all orders with "Pending" status */
 async function getOrders() {
   db = await connection();
 
-  var results = await db
+  const pendingStatus = await db
+    .collection("deliveryStatus")
+    .findOne({ status: "Pending" });
+
+  if (!pendingStatus) {
+    console.log("❌ Pending status not found in DB.");
+    return [];
+  }
+
+  console.log("✅ Pending Status ObjectId:", pendingStatus._id); // <--- Add this
+
+  const results = await db
     .collection("prescriptions")
     .aggregate([
+      {
+        $match: {
+          delivery_status: pendingStatus._id,
+        },
+      },
       {
         $lookup: {
           from: "users",
@@ -464,9 +483,7 @@ async function getOrders() {
           as: "pharmacyDetails",
         },
       },
-      {
-        $unwind: { path: "$pharmacyDetails", preserveNullAndEmptyArrays: true },
-      }, // Unwind to get single patient object
+      { $unwind: { path: "$pharmacyDetails", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "users",
@@ -475,9 +492,7 @@ async function getOrders() {
           as: "patientDetails",
         },
       },
-      {
-        $unwind: { path: "$patientDetails", preserveNullAndEmptyArrays: true },
-      }, // ✅ Unwind to get single patient object
+      { $unwind: { path: "$patientDetails", preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
           from: "deliveryStatus",
@@ -491,17 +506,20 @@ async function getOrders() {
         $project: {
           _id: 1,
           pharmacyLocation: "$pharmacyDetails.address",
-          customerLocation: "$patientDetails.address", // ✅ Extract only the address
+          customerLocation: "$patientDetails.address",
           remark: 1,
-          status: "$statusDetails.status", // ✅ Extract status
+          status: "$statusDetails.status",
         },
       },
     ])
     .toArray();
 
-  console.log("Orders with Patient Address:", results); // ✅ Debugging log
+  console.log("✅ Orders fetched from DB:", results); // <--- Add this
+
   return results;
 }
+
+
 
 /* Async function to retrieve all cities from scenarios collection. */
 async function getCities(provinceId) {
