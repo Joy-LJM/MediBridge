@@ -1,4 +1,4 @@
-.footer{
+.footer {
   height: 3em;
   line-height: 3em;
   background-color: var(--darkGreen);
@@ -8,4 +8,5 @@
   bottom: 0;
   width: 100%;
   text-align: center;
+  z-index: 1000;
 }
