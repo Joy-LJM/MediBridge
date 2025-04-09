@@ -103,6 +103,29 @@ const ShipperDashboard = () => {
                         Order ID: {order._id}
                       </Typography>
 
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: "bold",
+                          marginBottom: "20px",
+                          fontFamily: "Georgia, serif",
+                        }}
+                      >
+                        Updated at:{" "}
+                        {new Date(order.updated_at)
+                          .toLocaleString("en-US", {
+                            weekday: "long", // e.g., Sunday
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: false,
+                          })
+                          .replace(",", "")}
+                      </Typography>
+
                       <Typography>
                         <strong>Pharmacy:</strong>{" "}
                         {order.pharmacyLocation || "N/A"}
