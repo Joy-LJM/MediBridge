@@ -507,6 +507,7 @@ async function getOrders() {
           _id: 1,
           pharmacyLocation: "$pharmacyDetails.address",
           customerLocation: "$patientDetails.address",
+          updated_at:1,
           remark: 1,
           status: "$statusDetails.status",
         },
