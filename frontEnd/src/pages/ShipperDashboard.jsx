@@ -1,183 +1,204 @@
-import  { useState, useEffect } from "react";
-import { Container, Card, CardContent, Typography, Button, Grid, Box, } from "@mui/material";
+import { useState, useEffect } from "react";
+import {
+  Container,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Grid,
+  Box,
+} from "@mui/material";
 import axios from "axios";
 import { HOST_URL } from "../constant";
 
 const ShipperDashboard = () => {
-    const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState([]);
 
-    useEffect(() => {
-        fetchOrders();
-    }, []);
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
-    const fetchOrders = async () => {
-        try {
-            const { data } = await axios.get(`${HOST_URL}/api/orders`);
-            console.log("Fetched Orders:", data);
-            setOrders(data);
-        } catch (error) {
-            console.error("Error fetching orders:", error);
-        }
-    };
+  const fetchOrders = async () => {
+    try {
+      const { data } = await axios.get(`${HOST_URL}/api/orders`, {
+        withCredentials: true,
+      });
+      setOrders(data);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+    }
+  };
 
-    const handleAccept = async (id) => {
-        try {
-            await axios.put(`${HOST_URL}/api/orders/update/${id}`, { status: "Accepted" });
-            fetchOrders();
-        } catch (error) {
-            console.error("Error accepting order:", error);
-        }
-    };
+  const updateOrderStatus = async (id, newStatus) => {
+    try {
+      await axios.put(
+        `${HOST_URL}/api/pharmacy/prescription/update/${id}`,
+        { deliveryStatus: newStatus },
+        { withCredentials: true }
+      );
 
-    const handleDeliveryComplete = async (id) => {
-        try {
-            await axios.put(`${HOST_URL}/api/orders/update/${id}`, { status: "Completed" });
-            fetchOrders();
-        } catch (error) {
-            console.error("Error completing delivery:", error);
-        }
-    };
+      // Update UI immediately
+      setOrders((prev) =>
+        prev.map((order) =>
+          order._id === id ? { ...order, status: newStatus } : order
+        )
+      );
+    } catch (error) {
+      console.error(`Error updating order to ${newStatus}:`, error);
+    }
+  };
 
-    return (
-        <Box sx={{  minHeight: "100vh", paddingBottom: "20px" }}>
-            <Box sx={{ display: "flex" }}>
-                <Box sx={{ width: "200px", backgroundColor: "#6F996D", color: "white", padding: "20px", minHeight: "100vh" }}>
-                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                        Orders
-                    </Typography>
-                </Box>
+  const visibleOrders = orders.filter((order) =>
+    ["Pending", "Accepted", "Delivering","Completed"].includes(order.status)
+  );
 
-                <Container maxWidth="md" sx={{ marginTop: "30px" }}>
-                    <Grid container spacing={4} justifyContent="center">
-                        {orders.map((order) => (
-                            <Grid item xs={12} sm={12} key={order._id}>
-                                <Card
-                                    sx={{
-                                        backgroundColor: "#EAF4E1",
-                                        borderRadius: "15px",
-                                        boxShadow: "2px 4px 8px rgba(0,0,0,0.1)",
-                                        padding: "15px",
-                                        textAlign: "center",
-                                        maxWidth: "650px",
-                                        margin: "auto",
-                                        border: "1px solid rgba(0, 0, 0, 0.1)"
-                                    }}
-                                >
-                                    <CardContent>
-                                        <Typography
-                                            variant="h6"
-                                            sx={{
-                                                fontWeight: "bold",
-                                                fontSize: "20px",
-                                                marginBottom: "20px",
-                                                textTransform: "uppercase",
-                                                fontFamily: "Georgia, serif"
-                                            }}
-                                        >
-                                            Order: {order._id}
-                                        </Typography>
-
-                                        <Typography sx={{ fontWeight: "bold", fontSize: "15px", fontFamily: "Georgia, serif", marginBottom: "20px" }}>
-                                            Pharmacy’s Location: {order.pharmacyLocation}
-                                        </Typography>
-
-                                        <Typography sx={{ fontWeight: "bold", fontSize: "15px", fontFamily: "Georgia, serif", marginBottom: "20px" }}>
-                                            Customer’s Location: {order.customerLocation || "None"}
-                                        </Typography>
-
-                                        <Typography sx={{ fontWeight: "bold", fontSize: "15px", fontFamily: "Georgia, serif", marginBottom: "20px" }}>
-                                            Remark: {order.remark || "None"}
-                                        </Typography>
-
-                                        <Typography sx={{ fontWeight: "bold", fontSize: "15px", fontFamily: "Georgia, serif", marginBottom: "30px" }}>
-                                            Status: {order.status || "None"}
-                                        </Typography>
-
-                                        {/* Action Buttons Based on Order Status */}
-                                        {order.status === "New" || order.status === "Declined" ? (
-                                            <Button
-                                                variant="contained"
-                                                disabled
-                                                sx={{
-                                                    backgroundColor: "#ccc",
-                                                    color: "black",
-                                                    borderRadius: "30px",
-                                                    padding: "10px 40px",
-                                                    textTransform: "none",
-                                                    fontSize: "16px",
-                                                    fontWeight: "bold",
-                                                    boxShadow: "none",
-                                                    marginTop: "20px"
-                                                }}
-                                            >
-                                                {order.status === "New" ? "Waiting for Pharmacy" : "Order Declined"}
-                                            </Button>
-                                        ) : order.status === "Pending" ? (
-                                            <Button
-                                                onClick={() => handleAccept(order._id)}
-                                                variant="contained"
-                                                sx={{
-                                                    backgroundColor: "white",
-                                                    color: "black",
-                                                    borderRadius: "30px",
-                                                    padding: "10px 40px",
-                                                    textTransform: "none",
-                                                    fontSize: "16px",
-                                                    fontWeight: "bold",
-                                                    boxShadow: "1px 2px 5px rgba(0,0,0,0.2)",
-                                                    marginTop: "20px",
-                                                    "&:hover": { backgroundColor: "#f0f0f0" }
-                                                }}
-                                            >
-                                                Accept
-                                            </Button>
-                                        ) : order.status === "Accepted" ? (
-                                            <Button
-                                                onClick={() => handleDeliveryComplete(order._id)}
-                                                variant="contained"
-                                                sx={{
-                                                    backgroundColor: "#FFC107",
-                                                    color: "black",
-                                                    borderRadius: "30px",
-                                                    padding: "10px 40px",
-                                                    textTransform: "none",
-                                                    fontSize: "16px",
-                                                    fontWeight: "bold",
-                                                    boxShadow: "1px 2px 5px rgba(0,0,0,0.2)",
-                                                    marginTop: "20px",
-                                                    "&:hover": { backgroundColor: "#FFD54F" }
-                                                }}
-                                            >
-                                                Mark as Delivered
-                                            </Button>
-                                        ) : (
-                                            <Button
-                                                variant="contained"
-                                                disabled
-                                                sx={{
-                                                    backgroundColor: "#ccc",
-                                                    color: "black",
-                                                    borderRadius: "30px",
-                                                    padding: "10px 40px",
-                                                    textTransform: "none",
-                                                    fontSize: "16px",
-                                                    fontWeight: "bold",
-                                                    boxShadow: "none",
-                                                    marginTop: "20px"
-                                                }}
-                                            >
-                                                {order.status === "Delivering" ? "Delivering" : "Completed"}
-                                            </Button>
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </Grid>
-                        ))}
-                    </Grid>
-                </Container>
-            </Box>
+  return (
+    <Box sx={{ minHeight: "100vh", paddingBottom: "20px" }}>
+      <Box sx={{ display: "flex" }}>
+        <Box
+          sx={{
+            width: "200px",
+            backgroundColor: "#6F996D",
+            color: "white",
+            padding: "20px",
+            minHeight: "100vh",
+          }}
+        >
+          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+            My Orders
+          </Typography>
         </Box>
-    );
+
+        <Container maxWidth="md" sx={{ marginTop: "30px" }}>
+          {visibleOrders.length === 0 ? (
+            <Typography
+              variant="h6"
+              sx={{ fontFamily: "Georgia, serif", marginTop: "50px" }}
+            >
+              No orders found
+            </Typography>
+          ) : (
+            <Grid container spacing={4} justifyContent="center">
+              {visibleOrders.map((order) => (
+                <Grid item xs={12} sm={12} key={order._id}>
+                  <Card
+                    sx={{
+                      backgroundColor: "#EAF4E1",
+                      borderRadius: "15px",
+                      padding: "15px",
+                      maxWidth: "650px",
+                      margin: "auto",
+                      border: "1px solid rgba(0, 0, 0, 0.1)",
+                    }}
+                  >
+                    <CardContent>
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontWeight: "bold",
+                          marginBottom: "20px",
+                          fontFamily: "Georgia, serif",
+                        }}
+                      >
+                        Order ID: {order._id}
+                      </Typography>
+
+                      <Typography>
+                        <strong>Pharmacy:</strong>{" "}
+                        {order.pharmacyLocation || "N/A"}
+                      </Typography>
+                      <Typography>
+                        <strong>Customer:</strong>{" "}
+                        {order.customerLocation || "N/A"}
+                      </Typography>
+                      <Typography>
+                        <strong>Remark:</strong> {order.remark || "None"}
+                      </Typography>
+                      <Typography>
+                        <strong>Status:</strong> {order.status}
+                      </Typography>
+
+                      <Box sx={{ marginTop: "20px", display: "flex", gap: 2 }}>
+                        {order.status === "Pending" && (
+                          <>
+                            <Button
+                              onClick={() =>
+                                updateOrderStatus(order._id, "Accepted")
+                              }
+                              variant="contained"
+                              sx={{
+                                backgroundColor: "#4CAF50",
+                                color: "white",
+                                fontWeight: "bold",
+                                "&:hover": { backgroundColor: "#45a049" },
+                              }}
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              onClick={() =>
+                                updateOrderStatus(order._id, "Declined")
+                              }
+                              variant="outlined"
+                              sx={{
+                                color: "red",
+                                borderColor: "red",
+                                fontWeight: "bold",
+                                "&:hover": {
+                                  borderColor: "#d32f2f",
+                                  backgroundColor: "#ffe6e6",
+                                },
+                              }}
+                            >
+                              Decline
+                            </Button>
+                          </>
+                        )}
+
+                        {order.status === "Accepted" && (
+                          <Button
+                            onClick={() =>
+                              updateOrderStatus(order._id, "Delivering")
+                            }
+                            variant="contained"
+                            sx={{
+                              backgroundColor: "#FF9800",
+                              color: "white",
+                              fontWeight: "bold",
+                              "&:hover": { backgroundColor: "#fb8c00" },
+                            }}
+                          >
+                            Delivering
+                          </Button>
+                        )}
+
+                        {order.status === "Delivering" && (
+                          <Button
+                            onClick={() =>
+                              updateOrderStatus(order._id, "Completed")
+                            }
+                            variant="contained"
+                            sx={{
+                              backgroundColor: "#2196F3",
+                              color: "white",
+                              fontWeight: "bold",
+                              "&:hover": { backgroundColor: "#1976D2" },
+                            }}
+                          >
+                            Completed
+                          </Button>
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Container>
+      </Box>
+    </Box>
+  );
 };
 
 export default ShipperDashboard;
